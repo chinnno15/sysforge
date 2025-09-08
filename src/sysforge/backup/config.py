@@ -71,10 +71,12 @@ class TargetConfig(BaseModel):
 class GitConfig(BaseModel):
     """Git repository handling configuration."""
     include_repos: bool = True
-    respect_gitignore: bool = True  # Now True by default - respect .gitignore
-    include_git_dir: bool = True
+    respect_gitignore: bool = False  # Changed default to False - backup everything for complete git repos
+    include_git_dir: bool = True  # Always include .git directory for complete restoration
+    backup_complete_git: bool = True  # New field to ensure complete git backup
     gitignore_override_patterns: List[str] = Field(default_factory=lambda: [
         "**/.env*",      # Environment files
+        "**/*.env",      # Alternative env format
         "**/.env.*",     # Environment files with suffixes (.env.local, .env.prod, etc.)
         "**/secrets.*",  # Secret files
         "**/config.*",   # Config files that might be important

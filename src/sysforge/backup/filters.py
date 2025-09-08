@@ -323,18 +323,87 @@ class FileFilter:
                     console.print(f"[red]Find command error: {e}, falling back to basic discovery[/red]")
                 return self._fallback_file_discovery(base_path, verbose, console)
         
-        # Apply file size filtering (find can't handle this reliably)
+        # Apply file size filtering AND individual file filtering
         filtered_files = []
         for file_path in file_paths:
-            if self._check_file_size(file_path):
+            # First check file size
+            if not self._check_file_size(file_path):
+                if verbose and console:
+                    console.print(f"[dim]Excluded: {file_path} (size exceeds limit)[/dim]")
+                continue
+            
+            # Then check if file should be included using our filtering rules
+            should_include, reason = self.should_include_file(file_path)
+            if should_include:
                 filtered_files.append(file_path)
             elif verbose and console:
-                console.print(f"[dim]Excluded: {file_path} (size exceeds limit)[/dim]")
+                console.print(f"[dim]Excluded: {file_path} ({reason})[/dim]")
+        
+        # Add complete git repository files (including .git directories and ignored files)
+        if git_repos and self.config.git.include_repos:
+            git_files = []
+            for repo in git_repos:
+                if self.config.git.respect_gitignore:
+                    # When respecting gitignore, only add override pattern files and .git directory
+                    if verbose and console:
+                        console.print(f"[dim]Adding git repository with gitignore respect: {repo.path}[/dim]")
+                    
+                    # Always include .git directory if configured
+                    if self.config.git.include_git_dir:
+                        git_dir = repo.path / '.git'
+                        if git_dir.exists():
+                            for file_path in git_dir.rglob('*'):
+                                if file_path.is_file():
+                                    git_files.append(file_path)
+                    
+                    # Add override pattern files (like .env)
+                    if self.config.git.gitignore_override_patterns:
+                        override_files = repo.get_override_files(self.config.git.gitignore_override_patterns)
+                        git_files.extend(override_files)
+                else:
+                    # When NOT respecting gitignore, add ALL repository files
+                    if verbose and console:
+                        console.print(f"[dim]Adding complete git repository: {repo.path}[/dim]")
+                    
+                    # Get all repository files including .git directory
+                    repo_files = repo.get_all_repo_files(include_git_dir=self.config.git.include_git_dir)
+                    git_files.extend(repo_files)
+            
+            # Apply size filtering and always_exclude filtering to git files
+            git_files_filtered = []
+            for file_path in git_files:
+                # Check file size
+                if not self._check_file_size(file_path):
+                    if verbose and console:
+                        console.print(f"[dim]Excluded git file: {file_path} (size exceeds limit)[/dim]")
+                    continue
+                
+                # Always respect always_exclude patterns even for git files
+                if self._matches_patterns(file_path, self.config.always_exclude):
+                    if verbose and console:
+                        console.print(f"[dim]Excluded git file: {file_path} (always exclude pattern)[/dim]")
+                    continue
+                
+                git_files_filtered.append(file_path)
+            
+            # Add git files to main list and remove duplicates
+            all_files = list(set(filtered_files + git_files_filtered))
+            
+            if verbose and console:
+                console.print(f"[dim]Added {len(git_files_filtered)} files from {len(git_repos)} git repositories[/dim]")
+                if self.config.git.respect_gitignore:
+                    console.print(f"[dim]  - Respects gitignore but includes .git directories[/dim]")
+                    console.print(f"[dim]  - Includes gitignored files matching override patterns (.env, etc.)[/dim]")
+                else:
+                    console.print(f"[dim]  - Includes complete .git directories for full restoration[/dim]")
+                    console.print(f"[dim]  - Includes ALL repository files (ignores .gitignore)[/dim]")
+                
+            filtered_files = all_files
         
         if verbose and console:
             console.print(f"[dim]Find-based scan complete:[/dim]")
-            console.print(f"[dim]  - Found {len(file_paths)} matching files[/dim]")
-            console.print(f"[dim]  - {len(filtered_files)} files after size filtering[/dim]")
+            console.print(f"[dim]  - Found {len(file_paths)} matching files from find[/dim]")
+            console.print(f"[dim]  - Total {len(filtered_files)} files after git repos and filtering[/dim]")
             console.print(f"[dim]  - Scan completed in seconds vs minutes with os.walk[/dim]")
             
         return sorted(filtered_files)
@@ -552,34 +621,61 @@ class FileFilter:
         return list(set(included_files))  # Remove duplicates
 
     def _matches_patterns(self, path: Path, patterns: List[str]) -> bool:
-        """Simple pattern matching for testing compatibility."""
+        """Pattern matching using glob-style patterns with ** support."""
         import fnmatch
         path_str = str(path)
         
+        # Try to convert path to relative path for matching (remove drive/mount prefix)
+        path_parts = path.parts
+        relative_path_variations = []
+        
+        # Add full path
+        relative_path_variations.append(path_str)
+        
+        # Add path without leading slash/drive
+        if len(path_parts) > 1:
+            relative_path_variations.append('/'.join(path_parts[1:]))
+        
+        # Add just the filename  
+        relative_path_variations.append(path.name)
+        
         for pattern in patterns:
-            # Handle ** patterns by checking if path contains the pattern
+            # Handle ** patterns
             if '**' in pattern:
-                # Convert **/temp/** to check if path contains 'temp' (for exclusion patterns)
-                if pattern.startswith('**/') and pattern.endswith('/**'):
-                    middle = pattern[3:-3]
-                    if f'/{middle}/' in path_str or path_str.endswith(f'/{middle}') or path.name == middle:
-                        return True
-                elif pattern.startswith('**/'):
-                    # Pattern like **/*.py
-                    if fnmatch.fnmatch(path.name, pattern[3:]):
-                        return True
-                elif pattern.endswith('/**'):
-                    # Pattern like src/** should match anything under src directory
-                    # OR tmp/** should match directory named tmp (for exclusions)
-                    dir_name = pattern[:-3]
-                    # Match if path starts with dir_name/ (inclusion) or if dir name matches exactly (exclusion)
-                    if (path_str.startswith(f'{dir_name}/') or f'/{dir_name}/' in path_str or 
-                        path.name == dir_name):
-                        return True
+                for relative_path in relative_path_variations:
+                    # Use Python's pathlib-compatible glob matching
+                    # Check for combined pattern first: **/something/**
+                    if pattern.startswith('**/') and pattern.endswith('/**'):
+                        # Pattern like **/node_modules/** - extract the middle part
+                        middle = pattern[3:-3]  # Remove **/ and /**
+                        if (f'/{middle}/' in relative_path or 
+                            relative_path.startswith(f'{middle}/') or
+                            relative_path.endswith(f'/{middle}') or
+                            relative_path == middle):
+                            return True
+                    elif pattern.startswith('**/'):
+                        # Pattern like **/debug.txt or **/node_modules/important.js
+                        suffix = pattern[3:]  # Remove **/
+                        if (relative_path.endswith(suffix) or 
+                            fnmatch.fnmatch(relative_path, suffix) or
+                            ('/' + suffix) in relative_path):
+                            return True
+                    elif pattern.endswith('/**'):
+                        # Pattern like node_modules/** - starts with specific directory
+                        prefix = pattern[:-3]  # Remove /**
+                        if (relative_path.startswith(prefix + '/') or 
+                            ('/' + prefix + '/') in relative_path or
+                            relative_path == prefix):
+                            return True
+                    else:
+                        # Pattern like node_modules/**/file.txt
+                        if fnmatch.fnmatch(relative_path, pattern.replace('**/', '*/')):
+                            return True
             else:
-                # Simple glob matching for tests
-                if fnmatch.fnmatch(path_str, pattern) or fnmatch.fnmatch(path.name, pattern):
-                    return True
+                # Simple glob matching
+                for relative_path in relative_path_variations:
+                    if fnmatch.fnmatch(relative_path, pattern):
+                        return True
         return False
 
     def get_filter_stats(self) -> dict:

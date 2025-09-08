@@ -89,8 +89,9 @@ class TestGitConfig:
         """Test default git configuration."""
         config = GitConfig()
         assert config.include_repos is True
-        assert config.respect_gitignore is True  # Now True by default
+        assert config.respect_gitignore is False  # Changed to False for complete git backup
         assert config.include_git_dir is True
+        assert config.backup_complete_git is True  # New field for complete git backup
         assert len(config.gitignore_override_patterns) > 0  # Should have default override patterns
         assert "**/.env*" in config.gitignore_override_patterns
 
