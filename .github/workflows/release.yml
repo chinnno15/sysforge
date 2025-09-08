@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.2
+        uses: pypa/cibuildwheel@v3.1.4
         env:
           SYSFORGE_COMPILE_MYPYC: "1"
           CIBW_ARCHS: ${{ matrix.arch }}
