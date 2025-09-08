@@ -54,10 +54,20 @@ class FileFilter:
     
     def _build_find_include_args(self) -> List[str]:
         """Build simplified find command inclusion arguments for performance."""
-        # Use only the most common file types to keep find command fast
+        # Use common file types including shell scripts and config files
         common_extensions = [
             '*.py', '*.js', '*.ts', '*.md', '*.txt', '*.json', '*.yaml', '*.yml',
-            '*.png', '*.jpg', '*.jpeg', '*.pdf', '*.doc', '*.docx'
+            '*.png', '*.jpg', '*.jpeg', '*.pdf', '*.doc', '*.docx',
+            # Shell and script files  
+            '*.sh', '*.bash', '*.zsh', '*.fish',
+            # Config and dot files
+            '*.conf', '*.config', '*.ini', '*.cfg'
+        ]
+        
+        # Important specific files (dot files in home directory)
+        important_files = [
+            '.gitconfig', '.bashrc', '.zshrc', '.profile', '.vimrc',
+            '.bash_profile', '.bash_aliases', '.tmux.conf', '.screenrc'
         ]
         
         # Important directories to include
@@ -71,6 +81,13 @@ class FileFilter:
             if not first:
                 args.append('-o')
             args.extend(['-name', ext])
+            first = False
+        
+        # Add important specific files
+        for filename in important_files:
+            if not first:
+                args.append('-o')
+            args.extend(['-name', filename])
             first = False
         
         # Add important directories
@@ -263,61 +280,64 @@ class FileFilter:
             else:
                 console.print(f"[dim]No git repositories found[/dim]")
 
-        # Build find command for high-performance file discovery
-        find_cmd = self._build_find_command(base_path)
+        # Use specialized home directory scanning if needed
+        if base_path == Path.home():
+            file_paths = self._scan_home_directory_focused(verbose, console)
+        else:
+            # Build find command for high-performance file discovery
+            find_cmd = self._build_find_command(base_path)
+            
+            if verbose and console:
+                console.print(f"[dim]Executing find command...[/dim]")
+            
+            try:
+                # Execute find command with null-terminated output for handling special characters
+                if verbose and console:
+                    console.print(f"[dim]Running: {' '.join(find_cmd[:10])}... ({len(find_cmd)} args)[/dim]")
+                
+                result = subprocess.run(
+                    find_cmd + ['-print0'], 
+                    cwd=str(base_path),
+                    capture_output=True, 
+                    text=True, 
+                    timeout=60  # Reduced to 1 minute timeout
+                )
+                
+                if result.returncode != 0:
+                    if verbose and console:
+                        console.print(f"[red]Find command failed: {result.stderr}[/red]")
+                    # Fallback to basic file discovery
+                    return self._fallback_file_discovery(base_path, verbose, console)
+                
+                # Parse null-terminated output
+                file_paths = []
+                if result.stdout.strip():
+                    files = result.stdout.rstrip('\0').split('\0')
+                    file_paths = [Path(f) for f in files if f]
+            except subprocess.TimeoutExpired:
+                if verbose and console:
+                    console.print(f"[red]Find command timed out, falling back to basic discovery[/red]")
+                return self._fallback_file_discovery(base_path, verbose, console)
+            except Exception as e:
+                if verbose and console:
+                    console.print(f"[red]Find command error: {e}, falling back to basic discovery[/red]")
+                return self._fallback_file_discovery(base_path, verbose, console)
+        
+        # Apply file size filtering (find can't handle this reliably)
+        filtered_files = []
+        for file_path in file_paths:
+            if self._check_file_size(file_path):
+                filtered_files.append(file_path)
+            elif verbose and console:
+                console.print(f"[dim]Excluded: {file_path} (size exceeds limit)[/dim]")
         
         if verbose and console:
-            console.print(f"[dim]Executing find command...[/dim]")
-        
-        try:
-            # Execute find command with null-terminated output for handling special characters
-            if verbose and console:
-                console.print(f"[dim]Running: {' '.join(find_cmd[:10])}... ({len(find_cmd)} args)[/dim]")
+            console.print(f"[dim]Find-based scan complete:[/dim]")
+            console.print(f"[dim]  - Found {len(file_paths)} matching files[/dim]")
+            console.print(f"[dim]  - {len(filtered_files)} files after size filtering[/dim]")
+            console.print(f"[dim]  - Scan completed in seconds vs minutes with os.walk[/dim]")
             
-            result = subprocess.run(
-                find_cmd + ['-print0'], 
-                cwd=str(base_path),
-                capture_output=True, 
-                text=True, 
-                timeout=60  # Reduced to 1 minute timeout
-            )
-            
-            if result.returncode != 0:
-                if verbose and console:
-                    console.print(f"[red]Find command failed: {result.stderr}[/red]")
-                # Fallback to basic file discovery
-                return self._fallback_file_discovery(base_path, verbose, console)
-            
-            # Parse null-terminated output
-            file_paths = []
-            if result.stdout.strip():
-                files = result.stdout.rstrip('\0').split('\0')
-                file_paths = [Path(f) for f in files if f]
-            
-            # Apply file size filtering (find can't handle this reliably)
-            filtered_files = []
-            for file_path in file_paths:
-                if self._check_file_size(file_path):
-                    filtered_files.append(file_path)
-                elif verbose and console:
-                    console.print(f"[dim]Excluded: {file_path} (size exceeds limit)[/dim]")
-            
-            if verbose and console:
-                console.print(f"[dim]Find-based scan complete:[/dim]")
-                console.print(f"[dim]  - Found {len(file_paths)} matching files[/dim]")
-                console.print(f"[dim]  - {len(filtered_files)} files after size filtering[/dim]")
-                console.print(f"[dim]  - Scan completed in seconds vs minutes with os.walk[/dim]")
-                
-            return sorted(filtered_files)
-            
-        except subprocess.TimeoutExpired:
-            if verbose and console:
-                console.print(f"[red]Find command timed out, falling back to basic discovery[/red]")
-            return self._fallback_file_discovery(base_path, verbose, console)
-        except Exception as e:
-            if verbose and console:
-                console.print(f"[red]Find command error: {e}, falling back to basic discovery[/red]")
-            return self._fallback_file_discovery(base_path, verbose, console)
+        return sorted(filtered_files)
 
     def _build_find_command(self, base_path: Path) -> List[str]:
         """Build optimized find command with all filtering rules."""
@@ -340,10 +360,33 @@ class FileFilter:
     
     def _build_focused_home_scan_command(self) -> List[str]:
         """Build focused scan command for home directory to avoid scanning huge data dirs."""
-        search_paths = self._get_focused_search_paths()
+        home_dir = Path.home()
         
-        # Build command with multiple search paths
-        cmd = ['find'] + search_paths + ['-type', 'f']
+        # Build two separate find commands:
+        # 1. Home directory root with maxdepth 1 (for .gitconfig, *.sh files)  
+        # 2. Specific subdirectories for deeper scanning
+        
+        # First: scan home directory root only (maxdepth 1)
+        home_root_cmd = ['find', str(home_dir), '-maxdepth', '1', '-type', 'f']
+        
+        # Second: get subdirectories to scan deeply
+        subdirs = []
+        for dot_dir in self.config.dot_directory_whitelist:
+            dot_path = home_dir / dot_dir
+            if dot_path.exists():
+                subdirs.append(str(dot_path))
+        
+        important_dirs = ['Documents', 'Pictures', 'Desktop', 'Downloads', 'Work', 'Projects', 'Code', 'dev', 'src']
+        for dir_name in important_dirs:
+            dir_path = home_dir / dir_name
+            if dir_path.exists():
+                subdirs.append(str(dir_path))
+        
+        # Build combined command: home root + subdirectories
+        if subdirs:
+            cmd = ['find', str(home_dir)] + ['-maxdepth', '1', '-type', 'f', '-o'] + subdirs + ['-type', 'f']
+        else:
+            cmd = home_root_cmd
         
         # Add simplified exclusions
         simple_exclusions = ['*/.cache/*', '*/__pycache__/*', '*/node_modules/*']
@@ -356,6 +399,71 @@ class FileFilter:
             cmd.extend(include_args)
         
         return cmd
+    
+    def _scan_home_directory_focused(self, verbose: bool, console) -> List[Path]:
+        """Specialized home directory scanning that includes root files and subdirectories."""
+        home_dir = Path.home()
+        all_files = []
+        
+        # First: scan home directory root with maxdepth 1 for .gitconfig, *.sh files, etc.
+        if verbose and console:
+            console.print(f"[dim]Scanning home directory root for config files and scripts...[/dim]")
+            
+        root_cmd = ['find', str(home_dir), '-maxdepth', '1', '-type', 'f']
+        include_args = self._build_find_include_args()
+        if include_args:
+            root_cmd.extend(include_args)
+        
+        try:
+            result = subprocess.run(root_cmd + ['-print0'], capture_output=True, text=True, timeout=30)
+            if result.returncode == 0 and result.stdout.strip():
+                files = result.stdout.rstrip('\0').split('\0')
+                root_files = [Path(f) for f in files if f]
+                all_files.extend(root_files)
+                if verbose and console:
+                    console.print(f"[dim]Found {len(root_files)} files in home directory root[/dim]")
+        except Exception as e:
+            if verbose and console:
+                console.print(f"[dim]Error scanning home root: {e}[/dim]")
+        
+        # Second: scan important subdirectories
+        subdirs = []
+        for dot_dir in self.config.dot_directory_whitelist:
+            dot_path = home_dir / dot_dir
+            if dot_path.exists():
+                subdirs.append(str(dot_path))
+        
+        important_dirs = ['Documents', 'Pictures', 'Desktop', 'Downloads', 'Work', 'Projects', 'Code', 'dev', 'src']
+        for dir_name in important_dirs:
+            dir_path = home_dir / dir_name
+            if dir_path.exists():
+                subdirs.append(str(dir_path))
+        
+        if verbose and console:
+            console.print(f"[dim]Scanning {len(subdirs)} important subdirectories...[/dim]")
+            
+        for subdir in subdirs:
+            try:
+                subdir_cmd = ['find', subdir, '-type', 'f']
+                # Add exclusions
+                simple_exclusions = ['*/.cache/*', '*/__pycache__/*', '*/node_modules/*']
+                for pattern in simple_exclusions:
+                    subdir_cmd.extend(['-not', '-path', pattern])
+                # Add inclusions
+                if include_args:
+                    subdir_cmd.extend(include_args)
+                
+                result = subprocess.run(subdir_cmd + ['-print0'], capture_output=True, text=True, timeout=30)
+                if result.returncode == 0 and result.stdout.strip():
+                    files = result.stdout.rstrip('\0').split('\0')
+                    subdir_files = [Path(f) for f in files if f]
+                    all_files.extend(subdir_files)
+            except Exception as e:
+                if verbose and console:
+                    console.print(f"[dim]Error scanning {subdir}: {e}[/dim]")
+                continue
+        
+        return all_files
     
     def _check_file_size(self, file_path: Path) -> bool:
         """Check if file size is within limits."""
@@ -405,7 +513,10 @@ class FileFilter:
         home_dir = Path.home()
         search_paths = []
         
-        # Add whitelisted dot directories
+        # IMPORTANT: Add home directory root first to catch .gitconfig, *.sh files, etc.
+        search_paths.append(str(home_dir))
+        
+        # Add whitelisted dot directories  
         for dot_dir in self.config.dot_directory_whitelist:
             dot_path = home_dir / dot_dir
             if dot_path.exists():
@@ -418,7 +529,7 @@ class FileFilter:
             if dir_path.exists():
                 search_paths.append(str(dir_path))
         
-        return search_paths if search_paths else [str(home_dir)]
+        return search_paths
     
     def _fallback_file_discovery(self, base_path: Path, verbose: bool, console) -> List[Path]:
         """Fallback to basic file discovery if find fails."""
