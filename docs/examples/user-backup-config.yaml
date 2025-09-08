@@ -1,0 +1,94 @@
+# Example user backup configuration
+# Place this file at ~/.config/sysforge/user-backup.yaml
+
+# Compression settings
+compression:
+  format: "zstd"  # zstd (fastest), lz4 (very fast), or gzip (compatible)
+  level: 3        # 1-22 for zstd, 1-12 for lz4, 1-9 for gzip
+
+# Target configuration
+target:
+  base_path: "~/Work"  # Directory to backup
+  output_path: "~/Backups/work-{timestamp}.tar.zst"  # Output archive path
+
+# Git repository handling
+git:
+  include_repos: true     # Include git repositories
+  respect_gitignore: false # Don't respect .gitignore (backup everything)
+  include_git_dir: true   # Include .git directory
+
+# File patterns for non-git directories
+include_patterns:
+  - "**/*.py"
+  - "**/*.js"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.jsx"
+  - "**/*.java"
+  - "**/*.cpp"
+  - "**/*.c"
+  - "**/*.h"
+  - "**/*.rs"
+  - "**/*.go"
+  - "**/*.md"
+  - "**/*.rst"
+  - "**/*.txt"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.json"
+  - "**/*.toml"
+  - "**/*.ini"
+  - "**/*.cfg"
+  - "**/src/**"
+  - "**/docs/**"
+  - "**/tests/**"
+  - "**/*.sql"
+  - "**/*.sh"
+  - "**/*.bash"
+  - "**/Dockerfile*"
+  - "**/docker-compose*"
+  - "**/Makefile*"
+
+exclude_patterns:
+  # Build artifacts and caches (only applied outside git repos)
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+  - "**/*.pyc"
+  - "**/.venv/**"
+  - "**/venv/**"
+  - "**/target/**"      # Rust builds
+  - "**/build/**"       # General builds
+  - "**/dist/**"        # Distribution files
+  - "**/.pytest_cache/**"
+  - "**/.mypy_cache/**"
+  - "**/.ruff_cache/**"
+  - "**/*.egg-info/**"
+  - "**/coverage.xml"
+  - "**/.coverage"
+  - "**/.tox/**"
+  - "**/htmlcov/**"
+  
+  # IDE files
+  - "**/.vscode/**"
+  - "**/.idea/**"
+  - "**/*.swp"
+  - "**/*.swo"
+  - "**/*~"
+
+# Always exclude (even in git repos)
+always_exclude:
+  - "**/.DS_Store"
+  - "**/Thumbs.db"
+  - "**/*.tmp"
+  - "**/*.temp"
+  - "**/*.log"
+
+# File size limit
+max_file_size: "100MB"
+
+# Restore settings
+restore:
+  conflict_resolution: "prompt"  # prompt, overwrite, skip, backup
+  preserve_permissions: true
+  create_backup_on_conflict: true
+  backup_suffix: ".backup-{timestamp}"

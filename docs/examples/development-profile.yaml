@@ -1,0 +1,106 @@
+# Development profile configuration
+# Place this file at ~/.config/sysforge/profiles/development.yaml
+
+# Development-focused backup settings
+target:
+  base_path: "~/Development"
+  output_path: "~/Backups/development-{timestamp}.tar.zst"
+
+compression:
+  format: "zstd"
+  level: 6  # Higher compression for archival
+
+git:
+  include_repos: true
+  respect_gitignore: false
+  include_git_dir: true
+
+# Focus on source code and documentation
+include_patterns:
+  - "**/*.py"
+  - "**/*.js"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.jsx"
+  - "**/*.vue"
+  - "**/*.java"
+  - "**/*.cpp"
+  - "**/*.c"
+  - "**/*.h"
+  - "**/*.hpp"
+  - "**/*.rs"
+  - "**/*.go"
+  - "**/*.rb"
+  - "**/*.php"
+  - "**/*.cs"
+  - "**/*.swift"
+  - "**/*.kt"
+  - "**/*.scala"
+  - "**/*.clj"
+  - "**/*.hs"
+  - "**/*.elm"
+  - "**/*.md"
+  - "**/*.rst"
+  - "**/*.txt"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.json"
+  - "**/*.toml"
+  - "**/*.xml"
+  - "**/*.sql"
+  - "**/*.sh"
+  - "**/*.bash"
+  - "**/*.zsh"
+  - "**/*.fish"
+  - "**/*.ps1"
+  - "**/Dockerfile*"
+  - "**/docker-compose*"
+  - "**/Makefile*"
+  - "**/.env*"
+  - "**/requirements*.txt"
+  - "**/package*.json"
+  - "**/Cargo.toml"
+  - "**/go.mod"
+  - "**/pom.xml"
+  - "**/build.gradle"
+  - "**/*.sln"
+  - "**/*.csproj"
+
+exclude_patterns:
+  # Development artifacts
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+  - "**/*.pyc"
+  - "**/*.pyo"
+  - "**/.venv/**"
+  - "**/venv/**"
+  - "**/env/**"
+  - "**/target/**"
+  - "**/build/**"
+  - "**/dist/**"
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/.gradle/**"
+  - "**/gradlew*"
+  - "**/.mvn/**"
+  - "**/mvnw*"
+  
+  # IDE and editor files
+  - "**/.vscode/**"
+  - "**/.idea/**"
+  - "**/*.iml"
+  - "**/.project"
+  - "**/.classpath"
+  - "**/.settings/**"
+  - "**/*.swp"
+  - "**/*.swo"
+  - "**/*~"
+  
+  # OS and temporary files
+  - "**/.DS_Store"
+  - "**/Thumbs.db"
+  - "**/*.tmp"
+  - "**/*.temp"
+  - "**/tmp/**"
+
+max_file_size: "50MB"

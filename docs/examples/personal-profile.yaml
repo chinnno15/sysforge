@@ -1,0 +1,117 @@
+# Personal documents profile configuration
+# Place this file at ~/.config/sysforge/profiles/personal.yaml
+
+# Personal files backup settings
+target:
+  base_path: "~/Documents"
+  output_path: "~/Backups/personal-{timestamp}.tar.zst"
+
+compression:
+  format: "zstd"
+  level: 9  # Maximum compression for personal files
+
+git:
+  include_repos: true
+  respect_gitignore: false
+  include_git_dir: true
+
+# Include documents, images, and personal files
+include_patterns:
+  - "**/*.md"
+  - "**/*.txt"
+  - "**/*.rtf"
+  - "**/*.doc"
+  - "**/*.docx"
+  - "**/*.odt"
+  - "**/*.pdf"
+  - "**/*.tex"
+  - "**/*.html"
+  - "**/*.htm"
+  - "**/*.css"
+  - "**/*.js"
+  - "**/*.json"
+  - "**/*.xml"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.toml"
+  - "**/*.ini"
+  - "**/*.cfg"
+  - "**/*.conf"
+  
+  # Images
+  - "**/*.jpg"
+  - "**/*.jpeg"
+  - "**/*.png"
+  - "**/*.gif"
+  - "**/*.bmp"
+  - "**/*.tiff"
+  - "**/*.webp"
+  - "**/*.svg"
+  - "**/*.ico"
+  
+  # Audio and video (smaller files only due to size limit)
+  - "**/*.mp3"
+  - "**/*.wav"
+  - "**/*.flac"
+  - "**/*.ogg"
+  - "**/*.m4a"
+  
+  # Archives and backups
+  - "**/*.zip"
+  - "**/*.tar"
+  - "**/*.tar.gz"
+  - "**/*.tar.bz2"
+  - "**/*.7z"
+  - "**/*.rar"
+  
+  # Spreadsheets and presentations
+  - "**/*.xls"
+  - "**/*.xlsx"
+  - "**/*.ods"
+  - "**/*.csv"
+  - "**/*.ppt"
+  - "**/*.pptx"
+  - "**/*.odp"
+  
+  # Code and scripts (personal projects)
+  - "**/*.py"
+  - "**/*.js"
+  - "**/*.sh"
+  - "**/*.bash"
+  - "**/*.zsh"
+  
+  # Configuration files
+  - "**/.*rc"
+  - "**/.*profile"
+  - "**/.config/**"
+
+exclude_patterns:
+  # System and cache files
+  - "**/.DS_Store"
+  - "**/Thumbs.db"
+  - "**/*.tmp"
+  - "**/*.temp"
+  - "**/tmp/**"
+  - "**/.cache/**"
+  - "**/cache/**"
+  - "**/.thumbnails/**"
+  - "**/.Trash*/**"
+  
+  # Browser caches
+  - "**/Google/Chrome/Default/Cache/**"
+  - "**/Mozilla/Firefox/*/cache*/**"
+  - "**/Safari/Cache/**"
+  
+  # Application caches
+  - "**/.vscode/**"
+  - "**/.idea/**"
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+
+# Larger size limit for personal files (images, documents)
+max_file_size: "500MB"
+
+restore:
+  conflict_resolution: "prompt"
+  preserve_permissions: true
+  create_backup_on_conflict: true
