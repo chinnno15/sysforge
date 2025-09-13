@@ -32,6 +32,8 @@ class FileFilter:
             # Performance killers - browser caches
             '*/.cache/*', '*/.local/share/Trash/*', 
             '*/snap/*', '*/node_modules/*', '*/__pycache__/*',
+            # Build and cache directories that can be huge
+            '*/.mypy_cache/*', '*/.pytest_cache/*', '*/.ruff_cache/*',
             # Large data directories that are likely not user code/documents
             f'{home_dir}/data/*', f'{home_dir}/*/data/*', f'{home_dir}/*/*/data/*',
             f'{home_dir}/influxdb/*', f'{home_dir}/*_data/*', f'{home_dir}/*/wal/*',
