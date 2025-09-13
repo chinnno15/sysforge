@@ -71,7 +71,7 @@ class TargetConfig(BaseModel):
 class GitConfig(BaseModel):
     """Git repository handling configuration."""
     include_repos: bool = True
-    respect_gitignore: bool = False  # Changed default to False - backup everything for complete git repos
+    respect_gitignore: bool = True  # Respect .gitignore by default for sensible backup sizes
     include_git_dir: bool = True  # Always include .git directory for complete restoration
     backup_complete_git: bool = True  # New field to ensure complete git backup
     gitignore_override_patterns: List[str] = Field(default_factory=lambda: [
