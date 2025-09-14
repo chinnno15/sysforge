@@ -290,7 +290,8 @@ class RestoreOperation:
             target_dir.mkdir(parents=True, exist_ok=True)
             extract_path = target_dir
         else:
-            extract_path = Path("/")  # Extract to root (absolute paths)
+            # Default to user's home directory, not filesystem root
+            extract_path = Path.home()
 
         try:
             with Decompressor.open_archive(archive_path) as tar:
