@@ -111,11 +111,11 @@ class TestRestoreOperation:
     
     def test_get_target_path_without_target_dir(self):
         """Test target path calculation without target directory."""
-        archive_path = "/original/path/main.py"
-        
+        archive_path = "relative/path/main.py"
+
         target_path = self.restore_op._get_target_path(archive_path, None)
-        
-        expected = Path(archive_path)
+
+        expected = Path.home() / archive_path
         assert target_path == expected
     
     def test_handle_conflicts_overwrite(self):

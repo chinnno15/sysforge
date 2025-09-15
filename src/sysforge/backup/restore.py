@@ -135,8 +135,8 @@ class RestoreOperation:
         if target_dir:
             return target_dir / archive_path
         else:
-            # Use original path (assuming it was stored as absolute path)
-            return Path(archive_path)
+            # Default to user's home directory when no target specified
+            return Path.home() / archive_path
 
     def _handle_conflicts(self, conflicts: List[ConflictInfo]) -> None:
         """Handle file conflicts based on configuration."""
@@ -297,12 +297,8 @@ class RestoreOperation:
             with Decompressor.open_archive(archive_path) as tar:
                 for member in members_to_extract:
                     try:
-                        if target_dir:
-                            # Extract with custom target directory
-                            tar.extract(member, path=extract_path)
-                        else:
-                            # Extract to original location
-                            tar.extract(member, path="/")
+                        # Extract to the determined extract_path (either target_dir or home)
+                        tar.extract(member, path=extract_path)
 
                         target_path = self._get_target_path(member.name, target_dir)
                         self.restored_files.append(target_path)
