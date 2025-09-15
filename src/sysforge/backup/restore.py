@@ -203,11 +203,16 @@ class RestoreOperation:
             ("q", "Quit restore operation")
         ]
 
+        # Display available options with descriptions
+        self.console.print("\n[bold]Available actions:[/bold]")
+        for choice, description in choices:
+            self.console.print(f"  [bold cyan]{choice}[/bold cyan] - {description}")
+
         choice_str = "/".join([choice[0] for choice in choices])
 
         while True:
             action = Prompt.ask(
-                f"Choose action [{choice_str}]",
+                f"\nChoose action [{choice_str}]",
                 choices=[choice[0] for choice in choices],
                 default="s"
             )
