@@ -234,6 +234,10 @@ class BackupConfig(BaseModel):
 
     max_file_size: str = "100MB"
 
+    # Parallel processing configuration
+    max_workers: int = Field(default_factory=lambda: max(1, os.cpu_count() // 2))
+    enable_parallel_processing: bool = True
+
     def get_max_file_size_bytes(self) -> int:
         """Convert max_file_size string to bytes."""
         size_str = self.max_file_size.upper()

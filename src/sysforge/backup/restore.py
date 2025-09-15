@@ -135,8 +135,8 @@ class RestoreOperation:
         if target_dir:
             return target_dir / archive_path
         else:
-            # Default to user's home directory when no target specified
-            return Path.home() / archive_path
+            # Use original path (assuming it was stored as absolute path)
+            return Path(archive_path)
 
     def _handle_conflicts(self, conflicts: List[ConflictInfo]) -> None:
         """Handle file conflicts based on configuration."""
@@ -203,16 +203,11 @@ class RestoreOperation:
             ("q", "Quit restore operation")
         ]
 
-        # Display available options with descriptions
-        self.console.print("\n[bold]Available actions:[/bold]")
-        for choice, description in choices:
-            self.console.print(f"  [bold cyan]{choice}[/bold cyan] - {description}")
-
         choice_str = "/".join([choice[0] for choice in choices])
 
         while True:
             action = Prompt.ask(
-                f"\nChoose action [{choice_str}]",
+                f"Choose action [{choice_str}]",
                 choices=[choice[0] for choice in choices],
                 default="s"
             )
@@ -295,15 +290,18 @@ class RestoreOperation:
             target_dir.mkdir(parents=True, exist_ok=True)
             extract_path = target_dir
         else:
-            # Default to user's home directory, not filesystem root
-            extract_path = Path.home()
+            extract_path = Path("/")  # Extract to root (absolute paths)
 
         try:
             with Decompressor.open_archive(archive_path) as tar:
                 for member in members_to_extract:
                     try:
-                        # Extract to the determined extract_path (either target_dir or home)
-                        tar.extract(member, path=extract_path)
+                        if target_dir:
+                            # Extract with custom target directory
+                            tar.extract(member, path=extract_path)
+                        else:
+                            # Extract to original location
+                            tar.extract(member, path="/")
 
                         target_path = self._get_target_path(member.name, target_dir)
                         self.restored_files.append(target_path)

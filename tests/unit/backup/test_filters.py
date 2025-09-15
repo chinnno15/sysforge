@@ -362,9 +362,19 @@ class TestFileFilter:
             (base_path / "ignore.bin").touch()  # Should not match include patterns
             
             # Mock git detector to find no repositories
-            with patch.object(file_filter.git_detector, 'find_repositories', return_value=[]):
+            with patch.object(file_filter, '_discover_git_repositories_fast', return_value=[]):
                 with patch.object(file_filter.git_detector, 'get_repository_for_path', return_value=None):
-                    filtered_files = file_filter.get_filtered_files(base_path)
+                    # Mock the subprocess calls for find command
+                    with patch('subprocess.run') as mock_run:
+                        # Mock successful find results
+                        mock_result = type('MockResult', (), {
+                            'returncode': 0,
+                            'stdout': f'{src_dir / "main.py"}\0{src_dir / "utils.py"}\0{base_path / "readme.txt"}\0',
+                            'stderr': ''
+                        })()
+                        mock_run.return_value = mock_result
+
+                        filtered_files = file_filter.get_filtered_files(base_path)
             
             # Convert to names for easier testing
             file_names = {f.name for f in filtered_files}

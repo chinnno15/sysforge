@@ -136,6 +136,17 @@ def create_backup_command(
         None,
         "--exclude",
         help="Add exclude pattern (can be used multiple times)"
+    ),
+    max_workers: Optional[int] = typer.Option(
+        None,
+        "--max-workers",
+        "-j",
+        help="Number of parallel workers (default: half CPU cores)"
+    ),
+    enable_parallel: bool = typer.Option(
+        True,
+        "--parallel/--no-parallel",
+        help="Enable/disable parallel processing"
     )
 ):
     """Create a backup of user directory."""
@@ -166,6 +177,12 @@ def create_backup_command(
 
         if exclude_pattern:
             overrides["exclude_patterns"] = list(exclude_pattern)
+
+        if max_workers is not None:
+            overrides["max_workers"] = max_workers
+
+        if not enable_parallel:
+            overrides["enable_parallel_processing"] = False
 
         # Load configuration
         config = _load_config(
@@ -510,6 +527,133 @@ def list_command(
     except Exception as e:
         console.print(f"[red]List command failed: {e}[/red]")
         raise typer.Exit(1)
+
+
+@backup_app.command("benchmark")
+def benchmark_command(
+    path: str = typer.Argument(default="~", help="Path to benchmark"),
+    workers: str = typer.Option("1,2,4,8", help="Comma-separated worker counts to test"),
+    iterations: int = typer.Option(3, help="Number of iterations per test"),
+    output_file: Optional[str] = typer.Option(None, help="Save benchmark results to file")
+):
+    """Benchmark backup performance with different worker counts."""
+    import statistics
+    from rich.table import Table
+    from rich.console import Console
+    from .core import create_backup
+
+    console = Console()
+
+    # Parse worker counts
+    try:
+        worker_counts = [int(w.strip()) for w in workers.split(',')]
+    except ValueError:
+        console.print("[red]Error: Invalid worker counts format. Use comma-separated integers like '1,2,4,8'[/red]")
+        raise typer.Exit(1)
+
+    console.print(f"[bold blue]Benchmarking backup performance on: {path}[/bold blue]")
+    console.print(f"[dim]Worker counts: {worker_counts}[/dim]")
+    console.print(f"[dim]Iterations per test: {iterations}[/dim]")
+    console.print()
+
+    benchmark_results = {}
+
+    for worker_count in worker_counts:
+        console.print(f"[yellow]Testing with {worker_count} workers...[/yellow]")
+
+        iteration_times = []
+        iteration_files = []
+
+        for i in range(iterations):
+            console.print(f"[dim]  Iteration {i+1}/{iterations}[/dim]")
+
+            # Create config with specific worker count
+            config = _load_config()
+            config.max_workers = worker_count
+            config.enable_parallel_processing = worker_count > 1
+
+            # Run dry run to measure scanning performance
+            try:
+                result = create_backup(
+                    config=config,
+                    target_path=Path(path).expanduser(),
+                    dry_run=True,
+                    verbose=False,
+                    console=Console(file=open(os.devnull, 'w'))  # Suppress output
+                )
+
+                scan_time = result.get('performance_metrics', {}).get('total_scan_time', 0)
+                files_found = result.get('performance_metrics', {}).get('total_files_found', 0)
+
+                iteration_times.append(scan_time)
+                iteration_files.append(files_found)
+
+            except Exception as e:
+                console.print(f"[red]Error in iteration {i+1}: {e}[/red]")
+                continue
+
+        if iteration_times:
+            avg_time = statistics.mean(iteration_times)
+            min_time = min(iteration_times)
+            max_time = max(iteration_times)
+            files_found = iteration_files[0] if iteration_files else 0
+            files_per_sec = files_found / avg_time if avg_time > 0 else 0
+
+            benchmark_results[worker_count] = {
+                'avg_time': avg_time,
+                'min_time': min_time,
+                'max_time': max_time,
+                'files_found': files_found,
+                'files_per_sec': files_per_sec,
+                'speedup': None  # Will calculate later
+            }
+
+    # Calculate speedup relative to single worker
+    if 1 in benchmark_results and benchmark_results[1]['avg_time'] > 0:
+        baseline_time = benchmark_results[1]['avg_time']
+        for worker_count in benchmark_results:
+            speedup = baseline_time / benchmark_results[worker_count]['avg_time']
+            benchmark_results[worker_count]['speedup'] = speedup
+
+    # Display results table
+    table = Table(title="Backup Performance Benchmark Results")
+    table.add_column("Workers", justify="right", style="cyan")
+    table.add_column("Avg Time (s)", justify="right", style="green")
+    table.add_column("Min Time (s)", justify="right", style="green")
+    table.add_column("Max Time (s)", justify="right", style="green")
+    table.add_column("Files Found", justify="right", style="yellow")
+    table.add_column("Files/sec", justify="right", style="magenta")
+    table.add_column("Speedup", justify="right", style="bold blue")
+
+    for worker_count in sorted(benchmark_results.keys()):
+        result = benchmark_results[worker_count]
+        speedup_str = f"{result['speedup']:.2f}x" if result['speedup'] else "N/A"
+
+        table.add_row(
+            str(worker_count),
+            f"{result['avg_time']:.2f}",
+            f"{result['min_time']:.2f}",
+            f"{result['max_time']:.2f}",
+            f"{result['files_found']:,}",
+            f"{result['files_per_sec']:.0f}",
+            speedup_str
+        )
+
+    console.print(table)
+
+    # Save to file if requested
+    if output_file:
+        import json
+        with open(output_file, 'w') as f:
+            json.dump({
+                'benchmark_results': benchmark_results,
+                'test_parameters': {
+                    'path': path,
+                    'worker_counts': worker_counts,
+                    'iterations': iterations
+                }
+            }, f, indent=2)
+        console.print(f"[green]Benchmark results saved to: {output_file}[/green]")
 
 
 def _format_size(size_bytes: int) -> str:

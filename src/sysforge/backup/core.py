@@ -1,6 +1,8 @@
 """Core backup functionality."""
 
 import json
+import time
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -11,6 +13,32 @@ from rich.progress import Progress
 from .compression import CompressedTarFile
 from .config import BackupConfig
 from .filters import FileFilter
+
+
+class PerformanceMetrics:
+    """Track performance metrics for backup operations."""
+
+    def __init__(self):
+        self.repo_discovery_time = 0.0
+        self.repo_processing_time = 0.0
+        self.non_repo_processing_time = 0.0
+        self.total_scan_time = 0.0
+        self.total_repos_processed = 0
+        self.parallel_workers_used = 0
+        self.total_files_found = 0
+        self.total_files_processed = 0
+        self.enable_parallel = True
+
+
+@contextmanager
+def measure_time():
+    """Context manager to measure execution time."""
+    start = time.time()
+    timer = type('Timer', (), {'elapsed': 0})()
+    try:
+        yield timer
+    finally:
+        timer.elapsed = time.time() - start
 
 
 class BackupOperation:
@@ -30,6 +58,11 @@ class BackupOperation:
         self.errors: List[tuple[Path, str]] = []
         self.start_time: Optional[datetime] = None
         self.end_time: Optional[datetime] = None
+
+        # Performance metrics
+        self.performance_metrics = PerformanceMetrics()
+        self.performance_metrics.parallel_workers_used = config.max_workers
+        self.performance_metrics.enable_parallel = config.enable_parallel_processing
 
     def create_backup(
         self,
@@ -67,7 +100,7 @@ class BackupOperation:
         # Reset statistics
         self._reset_stats()
 
-        # Get list of files to backup
+        # Get list of files to backup with performance monitoring
         if self.verbose:
             self.console.print(f"[yellow]Scanning files in {target_path}...[/yellow]")
             self.console.print(f"[dim]Configuration:[/dim]")
@@ -77,10 +110,21 @@ class BackupOperation:
             self.console.print(f"[dim]  - Exclude patterns: {len(self.config.exclude_patterns)}[/dim]")
             self.console.print(f"[dim]  - Always exclude patterns: {len(self.config.always_exclude)}[/dim]")
             self.console.print(f"[dim]  - Max file size: {self.config.max_file_size}[/dim]")
+            self.console.print(f"[dim]  - Parallel processing: {self.config.enable_parallel_processing}[/dim]")
+            self.console.print(f"[dim]  - Max workers: {self.config.max_workers}[/dim]")
         else:
             self.console.print("[yellow]Scanning files...[/yellow]")
-            
-        files_to_backup = self.file_filter.get_filtered_files(target_path, verbose=self.verbose, console=self.console)
+
+        # Measure file scanning performance
+        with measure_time() as scan_timer:
+            files_to_backup = self.file_filter.get_filtered_files(target_path, verbose=self.verbose, console=self.console)
+
+        # Update performance metrics
+        self.performance_metrics.total_scan_time = scan_timer.elapsed
+        self.performance_metrics.total_files_found = len(files_to_backup)
+
+        if self.verbose:
+            self.console.print(f"[dim]File scanning completed in {scan_timer.elapsed:.2f}s[/dim]")
 
         self.total_files = len(files_to_backup)
         self.total_size = sum(
@@ -266,6 +310,8 @@ class BackupOperation:
 
     def _get_backup_info(self, target_path: Path, output_path: Path, files_list: Optional[List[Path]] = None) -> Dict[str, any]:
         """Get backup information dictionary."""
+        duration = self.end_time - self.start_time if self.end_time and self.start_time else None
+
         return {
             "success": len(self.errors) == 0,  # No errors means success
             "target_path": str(target_path),
@@ -280,6 +326,18 @@ class BackupOperation:
             "files": files_list if files_list is not None else [],
             "compression_format": self.config.compression.format,
             "compression_level": self.config.compression.level,
+            "duration_seconds": duration.total_seconds() if duration else None,
+            "performance_metrics": {
+                "total_scan_time": self.performance_metrics.total_scan_time,
+                "repo_discovery_time": self.performance_metrics.repo_discovery_time,
+                "repo_processing_time": self.performance_metrics.repo_processing_time,
+                "non_repo_processing_time": self.performance_metrics.non_repo_processing_time,
+                "total_repos_processed": self.performance_metrics.total_repos_processed,
+                "parallel_workers_used": self.performance_metrics.parallel_workers_used,
+                "enable_parallel": self.performance_metrics.enable_parallel,
+                "total_files_found": self.performance_metrics.total_files_found,
+                "files_per_second": self.performance_metrics.total_files_found / self.performance_metrics.total_scan_time if self.performance_metrics.total_scan_time > 0 else 0,
+            }
         }
 
 
