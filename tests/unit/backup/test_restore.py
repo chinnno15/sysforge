@@ -300,7 +300,7 @@ class TestRestoreOperation:
 
             # Should call chmod and utime (file.touch() also calls utime)
             mock_chmod.assert_called_once_with(test_file, 0o644)
-            # Check that utime was called with our timestamp (may be called multiple times)
+            # Check that utime was called with our timestamp
             utime_calls = mock_utime.call_args_list
             expected_call = ((test_file, (1640995200.0, 1640995200.0)), {})
             assert expected_call in utime_calls

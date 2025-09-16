@@ -124,14 +124,16 @@ class BackupOperation:
             self.console.print(
                 f"[dim]  - Exclude patterns: {len(self.config.exclude_patterns)}[/dim]"
             )
+            always_exclude_count = len(self.config.always_exclude)
             self.console.print(
-                f"[dim]  - Always exclude patterns: {len(self.config.always_exclude)}[/dim]"
+                f"[dim]  - Always exclude patterns: {always_exclude_count}[/dim]"
             )
             self.console.print(
                 f"[dim]  - Max file size: {self.config.max_file_size}[/dim]"
             )
+            parallel_enabled = self.config.enable_parallel_processing
             self.console.print(
-                f"[dim]  - Parallel processing: {self.config.enable_parallel_processing}[/dim]"
+                f"[dim]  - Parallel processing: {parallel_enabled}[/dim]"
             )
             self.console.print(f"[dim]  - Max workers: {self.config.max_workers}[/dim]")
         else:
@@ -395,7 +397,9 @@ class BackupOperation:
                 "total_scan_time": self.performance_metrics.total_scan_time,
                 "repo_discovery_time": self.performance_metrics.repo_discovery_time,
                 "repo_processing_time": self.performance_metrics.repo_processing_time,
-                "non_repo_processing_time": self.performance_metrics.non_repo_processing_time,
+                "non_repo_processing_time": (
+                    self.performance_metrics.non_repo_processing_time
+                ),
                 "total_repos_processed": self.performance_metrics.total_repos_processed,
                 "parallel_workers_used": self.performance_metrics.parallel_workers_used,
                 "enable_parallel": self.performance_metrics.enable_parallel,

@@ -3,6 +3,7 @@
 import json
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import git
 from rich.console import Console
@@ -178,7 +179,7 @@ class TestEndToEndBackupRestore:
 
             # Configure backup
             config = BackupConfig(
-                exclude_patterns=[],  # Don't exclude anything for git test - git repos should include everything
+                exclude_patterns=[],  # Don't exclude anything for git test
                 always_exclude=["**/.DS_Store"],  # But still exclude OS files
             )
             config.target.base_path = str(git_workspace)
@@ -217,7 +218,7 @@ class TestEndToEndBackupRestore:
             assert (restore_dir / "requirements.txt").exists()
             assert (restore_dir / ".gitignore").exists()
 
-            # Note: node_modules and __pycache__ are excluded even in git repos for performance
+            # Note: node_modules and __pycache__ are excluded even in git repos
             # But git files themselves are included
 
             # Verify ignored files were included (git repo ignores gitignore)
@@ -436,7 +437,3 @@ class TestEndToEndBackupRestore:
             assert "target_path" in backup_info
             assert "total_files" in backup_info
             assert backup_info["compression_format"] == config.compression.format
-
-
-# Import patch here to avoid conflicts
-from unittest.mock import patch

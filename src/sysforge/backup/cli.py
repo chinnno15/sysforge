@@ -234,8 +234,9 @@ def restore_backup_command(
                 console.print(
                     "[red]No backup files found in default backup directory[/red]"
                 )
+                backup_dir = ConfigManager.BACKUPS_DIR
                 console.print(
-                    f"[yellow]Default backup directory: {ConfigManager.BACKUPS_DIR}[/yellow]"
+                    f"[yellow]Default backup directory: {backup_dir}[/yellow]"
                 )
                 raise typer.Exit(1)
 
@@ -249,9 +250,8 @@ def restore_backup_command(
                 mod_time = datetime.datetime.fromtimestamp(modified)
 
                 size_str = _format_size(size)
-                console.print(
-                    f"  {i:2d}. {backup_path.name} ({size_str}, {mod_time.strftime('%Y-%m-%d %H:%M')})"
-                )
+                time_str = mod_time.strftime("%Y-%m-%d %H:%M")
+                console.print(f"  {i:2d}. {backup_path.name} ({size_str}, {time_str})")
 
             if len(available_backups) > 10:
                 console.print(f"  ... and {len(available_backups) - 10} more backups")
@@ -459,9 +459,8 @@ def list_command(
                 mod_time = datetime.datetime.fromtimestamp(modified)
 
                 size_str = _format_size(size)
-                console.print(
-                    f"  {backup_path.name} ({size_str}, {mod_time.strftime('%Y-%m-%d %H:%M')})"
-                )
+                time_str = mod_time.strftime("%Y-%m-%d %H:%M")
+                console.print(f"  {backup_path.name} ({size_str}, {time_str})")
 
         else:
             # List profiles
@@ -507,9 +506,7 @@ def benchmark_command(
     try:
         worker_counts = [int(w.strip()) for w in workers.split(",")]
     except ValueError:
-        console.print(
-            "[red]Error: Invalid worker counts format. Use comma-separated integers like '1,2,4,8'[/red]"
-        )
+        console.print("[red]Error: Invalid worker counts format. Use '1,2,4,8'[/red]")
         raise typer.Exit(1)
 
     console.print(f"[bold blue]Benchmarking backup performance on: {path}[/bold blue]")

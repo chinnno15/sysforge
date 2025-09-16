@@ -142,7 +142,7 @@ class TestFileFilter:
             with patch.object(
                 file_filter.git_detector, "get_repository_for_path", return_value=None
             ):
-                # Regular file should be included (matches include patterns and not always_excluded)
+                # Regular file should be included (matches include patterns)
                 should_include, reason = file_filter.should_include_file(regular_file)
                 assert should_include is True
                 assert "include pattern" in reason
@@ -391,7 +391,7 @@ class TestFileFilter:
                 mock_git_repo = GitRepository(repo_path, repo)
                 mock_get_repo.return_value = mock_git_repo
 
-                # Directory in git repo that matches exclude pattern should now be excluded
+                # Directory in git repo that matches exclude pattern excluded
                 # (new behavior for performance)
                 should_include, reason = file_filter.should_include_directory(
                     temp_dir_in_repo

@@ -330,7 +330,7 @@ class RestoreOperation:
                         self.errors.append((error_path, str(e)))
 
         except Exception as e:
-            raise RuntimeError(f"Failed to extract archive: {e}")
+            raise RuntimeError(f"Failed to extract archive: {e}") from e
 
     def _restore_permissions(self, file_path: Path, member: tarfile.TarInfo) -> None:
         """Restore file permissions from archive."""
@@ -344,7 +344,7 @@ class RestoreOperation:
         except (OSError, PermissionError) as e:
             # Log warning but don't fail the restore
             self.console.print(
-                f"[yellow]Warning: Could not restore permissions for {file_path}: {e}[/yellow]"
+                f"[yellow]Warning: Could not restore permissions: {e}[/yellow]"
             )
 
     def _show_dry_run_results(

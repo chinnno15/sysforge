@@ -126,7 +126,7 @@ __pycache__/
             assert should_include is True
             assert "git repository" in reason
 
-            # Test that ignored directories are still traversed when gitignore is disabled
+            # Test that ignored directories are traversed when gitignore disabled
             ignored_dir = repo_path / "node_modules"
             should_include, reason = file_filter.should_include_directory(ignored_dir)
             assert should_include is True
@@ -200,7 +200,7 @@ __pycache__/
             config = BackupConfig()
             config.git.respect_gitignore = True
             config.include_patterns = ["**/*"]  # Include everything by default
-            config.exclude_patterns = []  # Remove default exclude patterns for cleaner test
+            config.exclude_patterns = []  # Remove default exclude patterns
             file_filter = FileFilter(config)
 
             # Get filtered files
@@ -392,7 +392,7 @@ build/
             backup_config: BackupConfig = BackupConfig()
             backup_config.git.respect_gitignore = True
             backup_config.include_patterns = ["**/*"]  # Include all by default
-            backup_config.exclude_patterns = []  # Remove default excludes for cleaner test
+            backup_config.exclude_patterns = []  # Remove default excludes
             file_filter = FileFilter(backup_config)
 
             # Get filtered files

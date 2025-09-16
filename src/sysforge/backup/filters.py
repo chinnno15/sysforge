@@ -140,10 +140,10 @@ class FileFilter:
         return args
 
     def _is_home_root_dot_directory(self, dir_path: Path) -> bool:
-        """Check if the directory is a dot directory at the root of the user home directory."""
+        """Check if the directory is a dot directory at the root of user home."""
         try:
             home_dir = Path.home()
-            # Check if this directory is directly under home directory and starts with a dot
+            # Check if this directory is directly under home and starts with a dot
             if (
                 dir_path.parent == home_dir
                 and dir_path.name.startswith(".")
@@ -208,7 +208,7 @@ class FileFilter:
 
         # Check if file is ignored by git (if respect_gitignore is enabled)
         if self.config.git.respect_gitignore and git_repo.is_ignored(file_path):
-            # Check if file matches gitignore override patterns (backup even if gitignored)
+            # Check if file matches gitignore override patterns
             if self._matches_patterns(
                 file_path, self.config.git.gitignore_override_patterns
             ):
@@ -217,7 +217,7 @@ class FileFilter:
             else:
                 return False, "File ignored by .gitignore"
 
-        # For files in git repositories, we include them but still respect exclude patterns
+        # For files in git repositories, we include them but respect exclude patterns
         # for performance reasons (to avoid scanning large node_modules, etc.)
         if self._matches_patterns(file_path, self.config.exclude_patterns):
             return False, "File in git repository but matches exclude pattern"
@@ -259,7 +259,7 @@ class FileFilter:
         if self._matches_patterns(dir_path, self.config.always_exclude):
             return False, "Matches always_exclude pattern"
 
-        # Apply dot directory whitelist logic for root-level dot directories in home directory
+        # Apply dot directory whitelist logic for root-level dot directories
         if self._is_home_root_dot_directory(dir_path):
             dot_dir_name = dir_path.name
             if dot_dir_name in self.config.dot_directory_whitelist:
@@ -365,7 +365,7 @@ class FileFilter:
             elif verbose and console:
                 console.print(f"[dim]Excluded: {file_path} ({reason})[/dim]")
 
-        # Add complete git repository files (including .git directories and ignored files)
+        # Add complete git repository files (including .git and ignored files)
         if git_repos and self.config.git.include_repos:
             if self.config.enable_parallel_processing:
                 git_files_filtered = self._get_repository_files_parallel(
@@ -380,23 +380,21 @@ class FileFilter:
             all_files = list(set(filtered_files + git_files_filtered))
 
             if verbose and console:
+                git_file_count = len(git_files_filtered)
+                repo_count = len(git_repos)
                 console.print(
-                    f"[dim]Added {len(git_files_filtered)} files from {len(git_repos)} git repositories[/dim]"
+                    f"[dim]Added {git_file_count} files from {repo_count} git repos[/dim]"
                 )
                 if self.config.git.respect_gitignore:
                     console.print(
-                        "[dim]  - Respects gitignore but includes .git directories[/dim]"
+                        "[dim]  - Respects gitignore but includes .git dirs[/dim]"
                     )
                     console.print(
-                        "[dim]  - Includes gitignored files matching override patterns (.env, etc.)[/dim]"
+                        "[dim]  - Includes gitignored files matching patterns[/dim]"
                     )
                 else:
-                    console.print(
-                        "[dim]  - Includes complete .git directories for full restoration[/dim]"
-                    )
-                    console.print(
-                        "[dim]  - Includes ALL repository files (ignores .gitignore)[/dim]"
-                    )
+                    console.print("[dim]  - Includes complete .git directories[/dim]")
+                    console.print("[dim]  - Includes ALL repository files[/dim]")
 
             filtered_files = all_files
 
@@ -406,7 +404,7 @@ class FileFilter:
                 f"[dim]  - Found {len(file_paths)} matching files from find[/dim]"
             )
             console.print(
-                f"[dim]  - Total {len(filtered_files)} files after git repos and filtering[/dim]"
+                f"[dim]  - Total {len(filtered_files)} files after filtering[/dim]"
             )
             console.print(
                 "[dim]  - Scan completed in seconds vs minutes with os.walk[/dim]"
@@ -434,7 +432,7 @@ class FileFilter:
             return cmd
 
     def _build_focused_home_scan_command(self) -> list[str]:
-        """Build focused scan command for home directory to avoid scanning huge data dirs."""
+        """Build focused scan command for home directory."""
         home_dir = Path.home()
 
         # Build two separate find commands:
@@ -499,15 +497,13 @@ class FileFilter:
     def _scan_home_directory_focused(
         self, verbose: bool, console: Optional[RichConsole]
     ) -> list[Path]:
-        """Specialized home directory scanning that includes root files and subdirectories."""
+        """Specialized home directory scanning with root files."""
         home_dir = Path.home()
         all_files = []
 
-        # First: scan home directory root with maxdepth 1 for .gitconfig, *.sh files, etc.
+        # First: scan home directory root with maxdepth 1
         if verbose and console:
-            console.print(
-                "[dim]Scanning home directory root for config files and scripts...[/dim]"
-            )
+            console.print("[dim]Scanning home directory root for config files...[/dim]")
 
         root_cmd = ["find", str(home_dir), "-maxdepth", "1", "-type", "f"]
         include_args = self._build_find_include_args()
@@ -523,8 +519,9 @@ class FileFilter:
                 root_files = [Path(f) for f in files if f]
                 all_files.extend(root_files)
                 if verbose and console:
+                    file_count = len(root_files)
                     console.print(
-                        f"[dim]Found {len(root_files)} files in home directory root[/dim]"
+                        f"[dim]Found {file_count} files in home directory root[/dim]"
                     )
         except Exception as e:
             if verbose and console:
@@ -756,10 +753,10 @@ class FileFilter:
         git_files = []
         for repo in repos:
             if self.config.git.respect_gitignore:
-                # When respecting gitignore, only add override pattern files and .git directory
+                # When respecting gitignore, only add override files and .git directory
                 if verbose and console:
                     console.print(
-                        f"[dim]Adding git repository with gitignore respect: {repo.path}[/dim]"
+                        f"[dim]Adding git repository with gitignore: {repo.path}[/dim]"
                     )
 
                 # Always include .git directory if configured
@@ -835,7 +832,7 @@ class FileFilter:
             if not self._check_file_size(file_path):
                 if verbose and console:
                     console.print(
-                        f"[dim]Excluded git file: {file_path} (size exceeds limit)[/dim]"
+                        f"[dim]Excluded git file: {file_path} (size limit)[/dim]"
                     )
                 continue
 
@@ -843,7 +840,7 @@ class FileFilter:
             if self._matches_patterns(file_path, self.config.always_exclude):
                 if verbose and console:
                     console.print(
-                        f"[dim]Excluded git file: {file_path} (always exclude pattern)[/dim]"
+                        f"[dim]Excluded git file: {file_path} (exclude pattern)[/dim]"
                     )
                 continue
 
@@ -869,8 +866,9 @@ class FileFilter:
             search_chunks = self._get_directory_chunks(base_path, repo_paths)
 
         if verbose and console:
+            chunk_count = len(search_chunks)
             console.print(
-                f"[dim]Processing {len(search_chunks)} directory chunks in parallel...[/dim]"
+                f"[dim]Processing {chunk_count} directory chunks in parallel...[/dim]"
             )
 
         with ThreadPoolExecutor(
@@ -899,7 +897,7 @@ class FileFilter:
         verbose: bool,
         console: Optional[RichConsole],
     ) -> list[Path]:
-        """Get non-repository files using sequential processing (original implementation)."""
+        """Get non-repository files using sequential processing."""
         # Use specialized home directory scanning if needed
         if base_path == Path.home():
             file_paths = self._scan_home_directory_focused(verbose, console)
@@ -911,10 +909,12 @@ class FileFilter:
                 console.print("[dim]Executing find command...[/dim]")
 
             try:
-                # Execute find command with null-terminated output for handling special characters
+                # Execute find command with null-terminated output
                 if verbose and console:
+                    cmd_preview = " ".join(find_cmd[:10])
+                    arg_count = len(find_cmd)
                     console.print(
-                        f"[dim]Running: {' '.join(find_cmd[:10])}... ({len(find_cmd)} args)[/dim]"
+                        f"[dim]Running: {cmd_preview}... ({arg_count} args)[/dim]"
                     )
 
                 result = subprocess.run(
@@ -941,13 +941,13 @@ class FileFilter:
             except subprocess.TimeoutExpired:
                 if verbose and console:
                     console.print(
-                        "[red]Find command timed out, falling back to basic discovery[/red]"
+                        "[red]Find command timed out, falling back to basic[/red]"
                     )
                 return self._fallback_file_discovery(base_path, verbose, console)
             except Exception as e:
                 if verbose and console:
                     console.print(
-                        f"[red]Find command error: {e}, falling back to basic discovery[/red]"
+                        f"[red]Find command error: {e}, falling back to basic[/red]"
                     )
                 return self._fallback_file_discovery(base_path, verbose, console)
 

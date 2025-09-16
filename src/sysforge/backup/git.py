@@ -239,24 +239,21 @@ class GitDetector:
                 scanned_dirs += 1
 
                 if scanned_dirs % 1000 == 0:
-                    print(
-                        f"Git scan: processed {scanned_dirs} directories, found {len(repositories)} repositories"
-                    )
+                    repo_count = len(repositories)
+                    print(f"Git scan: {scanned_dirs} dirs, {repo_count} repos")
                     print(f"Current git scan directory: {root_path}")
 
                 # Skip if we've already scanned this path
                 if root_path in self._scanned_paths:
                     continue
 
-                # If we have a file filter, use it to check if we should traverse this directory
+                # If we have a file filter, check if we should traverse this directory
                 if file_filter and hasattr(file_filter, "should_include_directory"):
                     should_traverse, reason = file_filter.should_include_directory(
                         root_path
                     )
                     if not should_traverse:
-                        print(
-                            f"Skipping directory during git scan: {root_path} ({reason})"
-                        )
+                        print(f"Skipping dir during git scan: {root_path} ({reason})")
                         dirs.clear()
                         continue
 
@@ -270,11 +267,11 @@ class GitDetector:
                         self._repositories[root_path] = git_repo
                         print(f"Successfully loaded git repo: {root_path}")
 
-                        # Mark all subdirectories as scanned to avoid duplicate detection
+                        # Mark all subdirectories as scanned to avoid duplicates
                         repo_root = Path(repo.working_dir)
                         self._scanned_paths.add(repo_root)
 
-                        # Remove subdirectories from dirs to prevent os.walk from descending
+                        # Remove subdirectories from dirs to prevent descending
                         # into them (they're part of this git repository)
                         dirs.clear()
 
@@ -302,8 +299,9 @@ class GitDetector:
             # Skip directories we can't access
             pass
 
+        repo_count = len(repositories)
         print(
-            f"Git repository discovery complete: found {len(repositories)} repositories after scanning {scanned_dirs} directories"
+            f"Git discovery complete: {repo_count} repos, {scanned_dirs} dirs scanned"
         )
         return repositories
 

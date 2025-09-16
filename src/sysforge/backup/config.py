@@ -91,7 +91,7 @@ class GitConfig(BaseModel):
         default_factory=lambda: [
             "**/.env*",  # Environment files
             "**/*.env",  # Alternative env format
-            "**/.env.*",  # Environment files with suffixes (.env.local, .env.prod, etc.)
+            "**/.env.*",  # Environment files with suffixes
             "**/secrets.*",  # Secret files
             "**/config.*",  # Config files that might be important
         ]
@@ -338,7 +338,7 @@ class BackupConfig(BaseModel):
             "**/run/**",
             "**/mnt/**",
             "**/media/**",
-            # Additional caches (keep specific cache patterns that don't start with dots)
+            # Additional caches (keep specific cache patterns)
             "**/CachedData/**",
             "**/ShaderCache/**",
             "**/*_cache/**",
