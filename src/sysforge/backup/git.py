@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 import git
 from git import InvalidGitRepositoryError, NoSuchPathError
@@ -208,13 +208,13 @@ class GitRepository:
 class GitDetector:
     """Detects and manages Git repositories in a directory tree."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._repositories: Dict[Path, GitRepository] = {}
         self._scanned_paths: Set[Path] = set()
 
-    def find_repositories(self, base_path: Path, file_filter=None) -> List[GitRepository]:
+    def find_repositories(self, base_path: Path, file_filter: Optional[Any] = None) -> List[GitRepository]:
         """Find all Git repositories under the given path."""
-        repositories = []
+        repositories: List[GitRepository] = []
         scanned_dirs = 0
 
         # Walk the directory tree
@@ -232,7 +232,7 @@ class GitDetector:
                     continue
 
                 # If we have a file filter, use it to check if we should traverse this directory
-                if file_filter:
+                if file_filter and hasattr(file_filter, 'should_include_directory'):
                     should_traverse, reason = file_filter.should_include_directory(root_path)
                     if not should_traverse:
                         print(f"Skipping directory during git scan: {root_path} ({reason})")
@@ -263,7 +263,7 @@ class GitDetector:
                         pass
 
                 # Filter directories for next iteration
-                if file_filter:
+                if file_filter and hasattr(file_filter, 'should_include_directory'):
                     dirs_to_remove = []
                     for dir_name in dirs:
                         dir_path = root_path / dir_name
@@ -297,8 +297,8 @@ class GitDetector:
         while current != current.parent:
             try:
                 if (current / '.git').exists():
-                    repo = git.Repo(current)
-                    git_repo = GitRepository(current, repo)
+                    repo_obj = git.Repo(current)
+                    git_repo = GitRepository(current, repo_obj)
                     self._repositories[current] = git_repo
                     return git_repo
             except (InvalidGitRepositoryError, NoSuchPathError):

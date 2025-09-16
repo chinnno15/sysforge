@@ -6,7 +6,8 @@ import shlex
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Dict, Any, Union
+from rich.console import Console as RichConsole
 
 from .config import BackupConfig
 from .git import GitDetector, GitRepository
@@ -22,7 +23,7 @@ class FileFilter:
         self.git_detector = GitDetector()
         self.max_file_size_bytes = config.get_max_file_size_bytes()
         self.verbose = False
-        self.console = None
+        self.console: Optional[RichConsole] = None
 
     def _build_find_exclude_args(self) -> List[str]:
         """Build simplified find command exclusion arguments for performance."""
@@ -257,7 +258,7 @@ class FileFilter:
         # Include directory for traversal (individual files will be filtered)
         return True, "Directory traversal allowed"
 
-    def get_filtered_files(self, base_path: Path, verbose: bool = False, console=None) -> List[Path]:
+    def get_filtered_files(self, base_path: Path, verbose: bool = False, console: Optional[RichConsole] = None) -> List[Path]:
         """High-performance file discovery using native find command.
         
         This method uses find for 10-100x faster file discovery than os.walk.
@@ -396,7 +397,7 @@ class FileFilter:
         
         return cmd
     
-    def _scan_home_directory_focused(self, verbose: bool, console) -> List[Path]:
+    def _scan_home_directory_focused(self, verbose: bool, console: Optional[RichConsole]) -> List[Path]:
         """Specialized home directory scanning that includes root files and subdirectories."""
         home_dir = Path.home()
         all_files = []
@@ -504,6 +505,7 @@ class FileFilter:
                     except Exception as e:
                         if self.verbose and self.console:
                             self.console.print(f"[red]Error in parallel git discovery: {e}[/red]")
+                        # Continue processing other futures
 
         except Exception as e:
             if self.verbose and self.console:
@@ -574,7 +576,7 @@ class FileFilter:
 
         return repositories
 
-    def _get_repository_files_parallel(self, repos: List[GitRepository], verbose: bool, console) -> List[Path]:
+    def _get_repository_files_parallel(self, repos: List[GitRepository], verbose: bool, console: Optional[RichConsole]) -> List[Path]:
         """Process repositories in parallel using git's native filtering."""
         if not repos:
             return []
@@ -598,7 +600,7 @@ class FileFilter:
         # Apply size filtering and always_exclude filtering to git files
         return self._filter_git_files(all_files, verbose, console)
 
-    def _get_repository_files_sequential(self, repos: List[GitRepository], verbose: bool, console) -> List[Path]:
+    def _get_repository_files_sequential(self, repos: List[GitRepository], verbose: bool, console: Optional[RichConsole]) -> List[Path]:
         """Process repositories sequentially (original implementation)."""
         git_files = []
         for repo in repos:
@@ -660,7 +662,7 @@ class FileFilter:
 
         return filtered_files
 
-    def _filter_git_files(self, git_files: List[Path], verbose: bool, console) -> List[Path]:
+    def _filter_git_files(self, git_files: List[Path], verbose: bool, console: Optional[RichConsole]) -> List[Path]:
         """Apply size and exclusion filtering to git files."""
         git_files_filtered = []
         for file_path in git_files:
@@ -680,7 +682,7 @@ class FileFilter:
 
         return git_files_filtered
 
-    def _get_non_repository_files_parallel(self, base_path: Path, repos: List[GitRepository], verbose: bool, console) -> List[Path]:
+    def _get_non_repository_files_parallel(self, base_path: Path, repos: List[GitRepository], verbose: bool, console: Optional[RichConsole]) -> List[Path]:
         """Get non-repository files using parallel find operations."""
         repo_paths = {str(repo.path) for repo in repos}
 
@@ -711,7 +713,7 @@ class FileFilter:
 
         return all_files
 
-    def _get_non_repository_files_sequential(self, base_path: Path, repos: List[GitRepository], verbose: bool, console) -> List[Path]:
+    def _get_non_repository_files_sequential(self, base_path: Path, repos: List[GitRepository], verbose: bool, console: Optional[RichConsole]) -> List[Path]:
         """Get non-repository files using sequential processing (original implementation)."""
         # Use specialized home directory scanning if needed
         if base_path == Path.home():
@@ -873,7 +875,7 @@ class FileFilter:
         
         return search_paths
     
-    def _fallback_file_discovery(self, base_path: Path, verbose: bool, console) -> List[Path]:
+    def _fallback_file_discovery(self, base_path: Path, verbose: bool, console: Optional[RichConsole]) -> List[Path]:
         """Fallback to basic file discovery if find fails."""
         if verbose and console:
             console.print(f"[yellow]Using fallback file discovery method...[/yellow]")
@@ -951,7 +953,7 @@ class FileFilter:
                         return True
         return False
 
-    def get_filter_stats(self) -> dict:
+    def get_filter_stats(self) -> Dict[str, Any]:
         """Get statistics about the filtering process."""
         git_stats = self.git_detector.get_repository_stats()
 

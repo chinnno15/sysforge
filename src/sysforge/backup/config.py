@@ -33,7 +33,7 @@ class CompressionConfig(BaseModel):
 
     @field_validator('level')
     @classmethod
-    def validate_level(cls, v, info):
+    def validate_level(cls, v: int, info: Any) -> int:
         """Validate compression level based on format."""
         # Get format from other fields
         format_type = info.data.get('format', CompressionFormat.ZSTD) if info.data else CompressionFormat.ZSTD
@@ -235,7 +235,7 @@ class BackupConfig(BaseModel):
     max_file_size: str = "100MB"
 
     # Parallel processing configuration
-    max_workers: int = Field(default_factory=lambda: max(1, os.cpu_count() // 2))
+    max_workers: int = Field(default_factory=lambda: max(1, (os.cpu_count() or 2) // 2))
     enable_parallel_processing: bool = True
 
     def get_max_file_size_bytes(self) -> int:
@@ -281,7 +281,8 @@ class ConfigManager:
 
         try:
             with open(cls.USER_CONFIG_FILE) as f:
-                return yaml.safe_load(f)
+                result = yaml.safe_load(f)
+                return result if isinstance(result, dict) else None
         except Exception:
             return None
 
@@ -294,7 +295,8 @@ class ConfigManager:
 
         try:
             with open(profile_file) as f:
-                return yaml.safe_load(f)
+                result = yaml.safe_load(f)
+                return result if isinstance(result, dict) else None
         except Exception:
             return None
 
@@ -306,14 +308,15 @@ class ConfigManager:
 
         try:
             with open(config_path) as f:
-                return yaml.safe_load(f)
+                result = yaml.safe_load(f)
+                return result if isinstance(result, dict) else None
         except Exception:
             return None
 
     @classmethod
     def merge_configs(cls, *configs: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Merge multiple configuration dictionaries."""
-        result = {}
+        result: Dict[str, Any] = {}
 
         for config in configs:
             if config is not None:
@@ -400,7 +403,7 @@ class ConfigManager:
         """List available backup files."""
         cls.ensure_config_dirs()
 
-        backups = []
+        backups: List[Path] = []
         for pattern in ["*.tar.zst", "*.tar.lz4", "*.tar.gz", "*.tar"]:
             backups.extend(cls.BACKUPS_DIR.glob(pattern))
 

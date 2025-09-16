@@ -5,7 +5,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from rich.console import Console
 from rich.progress import Progress
@@ -18,7 +18,7 @@ from .filters import FileFilter
 class PerformanceMetrics:
     """Track performance metrics for backup operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.repo_discovery_time = 0.0
         self.repo_processing_time = 0.0
         self.non_repo_processing_time = 0.0
@@ -31,7 +31,7 @@ class PerformanceMetrics:
 
 
 @contextmanager
-def measure_time():
+def measure_time() -> Any:
     """Context manager to measure execution time."""
     start = time.time()
     timer = type('Timer', (), {'elapsed': 0})()
@@ -69,7 +69,7 @@ class BackupOperation:
         target_path: Optional[Path] = None,
         output_path: Optional[Path] = None,
         dry_run: bool = False
-    ) -> Dict[str, any]:
+    ) -> Dict[str, Any]:
         """Create a backup of the target directory.
         
         Args:
@@ -218,7 +218,7 @@ class BackupOperation:
         """Add backup metadata to the archive."""
         metadata = {
             "backup_info": {
-                "created_at": self.start_time.isoformat(),
+                "created_at": self.start_time.isoformat() if self.start_time else "",
                 "target_path": str(target_path),
                 "total_files": len(files_to_backup),
                 "total_size": self.total_size,
@@ -302,13 +302,14 @@ class BackupOperation:
 
     def _format_size(self, size_bytes: int) -> str:
         """Format file size in human readable format."""
+        size_float = float(size_bytes)
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if size_bytes < 1024.0:
-                return f"{size_bytes:.1f} {unit}"
-            size_bytes /= 1024.0
-        return f"{size_bytes:.1f} PB"
+            if size_float < 1024.0:
+                return f"{size_float:.1f} {unit}"
+            size_float = size_float / 1024.0
+        return f"{size_float:.1f} PB"
 
-    def _get_backup_info(self, target_path: Path, output_path: Path, files_list: Optional[List[Path]] = None) -> Dict[str, any]:
+    def _get_backup_info(self, target_path: Path, output_path: Path, files_list: Optional[List[Path]] = None) -> Dict[str, Any]:
         """Get backup information dictionary."""
         duration = self.end_time - self.start_time if self.end_time and self.start_time else None
 
@@ -348,7 +349,7 @@ def create_backup(
     dry_run: bool = False,
     verbose: bool = False,
     console: Optional[Console] = None
-) -> Dict[str, any]:
+) -> Dict[str, Any]:
     """Convenience function to create a backup.
     
     Args:
