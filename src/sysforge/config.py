@@ -8,7 +8,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Application settings."""
+    """Application settings.
+
+    Initializes settings with defaults for configuration and log directories.
+    """
 
     model_config = SettingsConfigDict(
         env_prefix="SYSFORGE_",
@@ -37,7 +40,6 @@ class Settings(BaseSettings):
     log_dir: Optional[Path] = Field(None, description="Log directory")
 
     def __init__(self, **values: Any) -> None:
-        """Initialize settings with defaults."""
         super().__init__(**values)
 
         if self.config_dir is None:

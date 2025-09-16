@@ -344,7 +344,9 @@ class TestRestoreOperation:
 
     @patch("sysforge.backup.restore.Decompressor.extract_archive")
     @patch("sysforge.backup.restore.Decompressor.list_archive")
-    def test_restore_archive_pattern_filter(self, mock_list_archive, mock_extract) -> None:
+    def test_restore_archive_pattern_filter(
+        self, mock_list_archive, mock_extract
+    ) -> None:
         """Test restore archive with pattern filter."""
         with tempfile.TemporaryDirectory() as temp_dir:
             archive_path = Path(temp_dir) / "test.tar.zst"
@@ -362,8 +364,8 @@ class TestRestoreOperation:
             mock_list_archive.return_value = [member1, member2]
 
             # Run with pattern filter
-            with patch.object(self.restore_op, "_extract_files") as mock_extract_files:
-                stats = self.restore_op.restore_archive(
+            with patch.object(self.restore_op, "_extract_files"):
+                self.restore_op.restore_archive(
                     archive_path, pattern_filter="*.py", dry_run=True
                 )
 

@@ -234,7 +234,7 @@ class TestGitDetector:
 
             detector = GitDetector()
             # First find the repository
-            repositories = detector.find_repositories(temp_path)
+            detector.find_repositories(temp_path)
 
             # Test path inside repo
             test_file = repo_path / "test_file.py"
@@ -332,7 +332,7 @@ class TestGitDetector:
             git.Repo.init(repo_path)
 
             detector = GitDetector()
-            repositories = detector.find_repositories(temp_path)
+            detector.find_repositories(temp_path)
 
             stats = detector.get_repository_stats()
             assert stats["total_repositories"] == 1
@@ -349,7 +349,7 @@ class TestGitDetector:
             git.Repo.init(repo_path)
 
             detector = GitDetector()
-            repositories = detector.find_repositories(temp_path)
+            detector.find_repositories(temp_path)
 
             # Verify cache has data
             assert len(detector._repositories) > 0

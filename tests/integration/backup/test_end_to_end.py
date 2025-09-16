@@ -15,14 +15,14 @@ from sysforge.backup.restore import restore_backup
 class TestEndToEndBackupRestore:
     """Test complete backup and restore workflow."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test fixtures."""
         import os
 
         devnull = open(os.devnull, "w")
         self.console = Console(file=devnull, quiet=True)
 
-    def create_test_workspace(self, base_path: Path):
+    def create_test_workspace(self, base_path: Path) -> None:
         """Create a test workspace with various file types."""
         # Create directory structure
         (base_path / "src").mkdir()
@@ -54,7 +54,7 @@ class TestEndToEndBackupRestore:
 
         return base_path
 
-    def create_git_workspace(self, base_path: Path):
+    def create_git_workspace(self, base_path: Path) -> git.Repo:
         """Create a git repository workspace."""
         # Initialize git repository
         repo = git.Repo.init(base_path)
@@ -320,7 +320,7 @@ class TestEndToEndBackupRestore:
             restore_dir = Path(temp_dir) / "restored_python"
             restore_dir.mkdir()
 
-            restore_result = restore_backup(
+            restore_backup(
                 archive_path=backup_path,
                 config=config,
                 target_dir=restore_dir,

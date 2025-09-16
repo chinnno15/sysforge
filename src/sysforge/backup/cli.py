@@ -3,7 +3,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Optional
 
 import typer
 import yaml
@@ -25,7 +25,7 @@ backup_app = typer.Typer(
 
 
 def _load_config(
-    config_file: Optional[Path] = None, profile: Optional[str] = None, **overrides
+    config_file: Optional[Path] = None, profile: Optional[str] = None, **overrides: Any
 ) -> BackupConfig:
     """Load configuration with proper hierarchy."""
     # Remove None values from overrides
@@ -42,7 +42,7 @@ def _load_config(
         raise typer.Exit(1)
 
 
-def _complete_backup_files(incomplete: str) -> List[str]:
+def _complete_backup_files(incomplete: str) -> list[str]:
     """Tab completion for backup files."""
     try:
         backup_files = ConfigManager.list_backups()
@@ -55,7 +55,7 @@ def _complete_backup_files(incomplete: str) -> List[str]:
         return []
 
 
-def _complete_profiles(incomplete: str) -> List[str]:
+def _complete_profiles(incomplete: str) -> list[str]:
     """Tab completion for profile names."""
     try:
         profiles = ConfigManager.list_profiles()
@@ -99,10 +99,10 @@ def create_backup_command(
     exclude_git: bool = typer.Option(
         False, "--exclude-git", help="Don't include git repositories"
     ),
-    include_pattern: Optional[List[str]] = typer.Option(
+    include_pattern: Optional[list[str]] = typer.Option(
         None, "--include", help="Add include pattern (can be used multiple times)"
     ),
-    exclude_pattern: Optional[List[str]] = typer.Option(
+    exclude_pattern: Optional[list[str]] = typer.Option(
         None, "--exclude", help="Add exclude pattern (can be used multiple times)"
     ),
     max_workers: Optional[int] = typer.Option(
@@ -114,11 +114,11 @@ def create_backup_command(
     enable_parallel: bool = typer.Option(
         True, "--parallel/--no-parallel", help="Enable/disable parallel processing"
     ),
-):
+) -> None:
     """Create a backup of user directory."""
     try:
         # Build overrides
-        overrides = {}
+        overrides: dict[str, Any] = {}
 
         if target_path:
             overrides["target"] = {"base_path": target_path}
@@ -173,7 +173,7 @@ def create_backup_command(
         output_path_obj = Path(output) if output else None
 
         # Create backup
-        result = create_backup(
+        create_backup(
             config=config,
             target_path=target_path_obj,
             output_path=output_path_obj,
@@ -224,7 +224,7 @@ def restore_backup_command(
     partial: Optional[str] = typer.Option(
         None, "--partial", help="Restore only files matching pattern"
     ),
-):
+) -> None:
     """Restore files from backup archive."""
     try:
         # If no backup file specified, list available backups
@@ -271,7 +271,7 @@ def restore_backup_command(
                 backup_file = choice
 
         # Build overrides
-        overrides = {}
+        overrides: dict[str, Any] = {}
         if conflict:
             overrides["restore"] = {"conflict_resolution": conflict}
 
@@ -307,7 +307,7 @@ def restore_backup_command(
         target_path_obj = Path(target) if target else None
 
         # Restore backup
-        result = restore_backup(
+        restore_backup(
             archive_path=backup_path,
             config=config,
             target_dir=target_path_obj,
@@ -339,7 +339,7 @@ def config_command(
     profile: Optional[str] = typer.Option(
         None, "--profile", "-p", help="Profile name (for profile-specific actions)"
     ),
-):
+) -> None:
     """Manage backup configuration."""
     try:
         if action == "show":
@@ -436,7 +436,7 @@ def list_command(
     backups: bool = typer.Option(
         True, "--backups/--profiles", help="List backups (default) or profiles"
     ),
-):
+) -> None:
     """List available backups or profiles."""
     try:
         if backups:
@@ -492,7 +492,7 @@ def benchmark_command(
     output_file: Optional[str] = typer.Option(
         None, help="Save benchmark results to file"
     ),
-):
+) -> None:
     """Benchmark backup performance with different worker counts."""
     import statistics
 
@@ -628,8 +628,9 @@ def benchmark_command(
 
 def _format_size(size_bytes: int) -> str:
     """Format file size in human readable format."""
+    size_float = float(size_bytes)
     for unit in ["B", "KB", "MB", "GB", "TB"]:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} PB"
+        if size_float < 1024.0:
+            return f"{size_float:.1f} {unit}"
+        size_float /= 1024.0
+    return f"{size_float:.1f} PB"

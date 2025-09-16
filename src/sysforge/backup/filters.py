@@ -4,7 +4,7 @@ import os
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 import git
 from rich.console import Console as RichConsole
@@ -23,7 +23,7 @@ class FileFilter:
         self.verbose = False
         self.console: Optional[RichConsole] = None
 
-    def _build_find_exclude_args(self) -> List[str]:
+    def _build_find_exclude_args(self) -> list[str]:
         """Build simplified find command exclusion arguments for performance."""
         args = []
 
@@ -66,7 +66,7 @@ class FileFilter:
 
         return args
 
-    def _build_find_include_args(self) -> List[str]:
+    def _build_find_include_args(self) -> list[str]:
         """Build simplified find command inclusion arguments for performance."""
         # Use common file types including shell scripts and config files
         common_extensions = [
@@ -158,8 +158,11 @@ class FileFilter:
     def should_include_file(self, file_path: Path) -> tuple[bool, str]:
         """Determine if a file should be included in the backup.
 
+        Args:
+            file_path: Path to the file to check
+
         Returns:
-            tuple: (should_include, reason)
+            tuple[bool, str]: (should_include, reason)
         """
         # Check if file exists and is accessible
         try:
@@ -305,7 +308,7 @@ class FileFilter:
         base_path: Path,
         verbose: bool = False,
         console: Optional[RichConsole] = None,
-    ) -> List[Path]:
+    ) -> list[Path]:
         """High-performance file discovery using native find command.
 
         This method uses find for 10-100x faster file discovery than os.walk.
@@ -411,7 +414,7 @@ class FileFilter:
 
         return sorted(filtered_files)
 
-    def _build_find_command(self, base_path: Path) -> List[str]:
+    def _build_find_command(self, base_path: Path) -> list[str]:
         """Build optimized find command with all filtering rules."""
         # If scanning home directory, focus on important subdirectories only
         if base_path == Path.home():
@@ -430,7 +433,7 @@ class FileFilter:
 
             return cmd
 
-    def _build_focused_home_scan_command(self) -> List[str]:
+    def _build_focused_home_scan_command(self) -> list[str]:
         """Build focused scan command for home directory to avoid scanning huge data dirs."""
         home_dir = Path.home()
 
@@ -466,12 +469,18 @@ class FileFilter:
 
         # Build combined command: home root + subdirectories
         if subdirs:
-            cmd = (
-                ["find", str(home_dir)]
-                + ["-maxdepth", "1", "-type", "f", "-o"]
-                + subdirs
-                + ["-type", "f"]
-            )
+            cmd = [
+                "find",
+                str(home_dir),
+                "-maxdepth",
+                "1",
+                "-type",
+                "f",
+                "-o",
+                *subdirs,
+                "-type",
+                "f",
+            ]
         else:
             cmd = home_root_cmd
 
@@ -489,7 +498,7 @@ class FileFilter:
 
     def _scan_home_directory_focused(
         self, verbose: bool, console: Optional[RichConsole]
-    ) -> List[Path]:
+    ) -> list[Path]:
         """Specialized home directory scanning that includes root files and subdirectories."""
         home_dir = Path.home()
         all_files = []
@@ -507,7 +516,7 @@ class FileFilter:
 
         try:
             result = subprocess.run(
-                root_cmd + ["-print0"], capture_output=True, text=True, timeout=30
+                [*root_cmd, "-print0"], capture_output=True, text=True, timeout=30
             )
             if result.returncode == 0 and result.stdout.strip():
                 files = result.stdout.rstrip("\0").split("\0")
@@ -565,7 +574,7 @@ class FileFilter:
                     subdir_cmd.extend(include_args)
 
                 result = subprocess.run(
-                    subdir_cmd + ["-print0"], capture_output=True, text=True, timeout=30
+                    [*subdir_cmd, "-print0"], capture_output=True, text=True, timeout=30
                 )
                 if result.returncode == 0 and result.stdout.strip():
                     files = result.stdout.rstrip("\0").split("\0")
@@ -587,7 +596,7 @@ class FileFilter:
         except (OSError, FileNotFoundError):
             return False
 
-    def _discover_git_repositories_fast(self, base_path: Path) -> List[GitRepository]:
+    def _discover_git_repositories_fast(self, base_path: Path) -> list[GitRepository]:
         """High-performance git repository discovery using find."""
         if self.config.enable_parallel_processing:
             return self._discover_git_repositories_parallel(base_path)
@@ -596,7 +605,7 @@ class FileFilter:
 
     def _discover_git_repositories_parallel(
         self, base_path: Path
-    ) -> List[GitRepository]:
+    ) -> list[GitRepository]:
         """Discover repositories using parallel directory scanning."""
         repositories = []
 
@@ -641,7 +650,7 @@ class FileFilter:
 
     def _discover_git_repositories_sequential(
         self, base_path: Path
-    ) -> List[GitRepository]:
+    ) -> list[GitRepository]:
         """Original sequential git repository discovery using find."""
         repositories = []
 
@@ -653,7 +662,7 @@ class FileFilter:
                 search_paths = [str(base_path)]
 
             # Use find to quickly locate all .git directories in focused paths
-            cmd = ["find"] + search_paths + ["-type", "d", "-name", ".git"]
+            cmd = ["find", *search_paths, "-type", "d", "-name", ".git"]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0 and result.stdout.strip():
@@ -679,13 +688,13 @@ class FileFilter:
 
         return repositories
 
-    def _find_repos_in_paths(self, search_paths: List[str]) -> List[GitRepository]:
+    def _find_repos_in_paths(self, search_paths: list[str]) -> list[GitRepository]:
         """Find git repositories in a list of search paths."""
         repositories = []
 
         try:
             # Use find to quickly locate all .git directories in focused paths
-            cmd = ["find"] + search_paths + ["-type", "d", "-name", ".git"]
+            cmd = ["find", *search_paths, "-type", "d", "-name", ".git"]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0 and result.stdout.strip():
@@ -711,8 +720,8 @@ class FileFilter:
         return repositories
 
     def _get_repository_files_parallel(
-        self, repos: List[GitRepository], verbose: bool, console: Optional[RichConsole]
-    ) -> List[Path]:
+        self, repos: list[GitRepository], verbose: bool, console: Optional[RichConsole]
+    ) -> list[Path]:
         """Process repositories in parallel using git's native filtering."""
         if not repos:
             return []
@@ -741,8 +750,8 @@ class FileFilter:
         return self._filter_git_files(all_files, verbose, console)
 
     def _get_repository_files_sequential(
-        self, repos: List[GitRepository], verbose: bool, console: Optional[RichConsole]
-    ) -> List[Path]:
+        self, repos: list[GitRepository], verbose: bool, console: Optional[RichConsole]
+    ) -> list[Path]:
         """Process repositories sequentially (original implementation)."""
         git_files = []
         for repo in repos:
@@ -782,7 +791,7 @@ class FileFilter:
 
         return self._filter_git_files(git_files, verbose, console)
 
-    def _process_single_repository(self, repo: GitRepository) -> List[Path]:
+    def _process_single_repository(self, repo: GitRepository) -> list[Path]:
         """Process a single repository using git's bulk operations."""
         repo_root = Path(repo.repo.working_dir)
         filtered_files = []
@@ -817,8 +826,8 @@ class FileFilter:
         return filtered_files
 
     def _filter_git_files(
-        self, git_files: List[Path], verbose: bool, console: Optional[RichConsole]
-    ) -> List[Path]:
+        self, git_files: list[Path], verbose: bool, console: Optional[RichConsole]
+    ) -> list[Path]:
         """Apply size and exclusion filtering to git files."""
         git_files_filtered = []
         for file_path in git_files:
@@ -845,10 +854,10 @@ class FileFilter:
     def _get_non_repository_files_parallel(
         self,
         base_path: Path,
-        repos: List[GitRepository],
+        repos: list[GitRepository],
         verbose: bool,
         console: Optional[RichConsole],
-    ) -> List[Path]:
+    ) -> list[Path]:
         """Get non-repository files using parallel find operations."""
         repo_paths = {str(repo.path) for repo in repos}
 
@@ -886,10 +895,10 @@ class FileFilter:
     def _get_non_repository_files_sequential(
         self,
         base_path: Path,
-        repos: List[GitRepository],
+        repos: list[GitRepository],
         verbose: bool,
         console: Optional[RichConsole],
-    ) -> List[Path]:
+    ) -> list[Path]:
         """Get non-repository files using sequential processing (original implementation)."""
         # Use specialized home directory scanning if needed
         if base_path == Path.home():
@@ -909,7 +918,7 @@ class FileFilter:
                     )
 
                 result = subprocess.run(
-                    find_cmd + ["-print0"],
+                    [*find_cmd, "-print0"],
                     cwd=str(base_path),
                     capture_output=True,
                     text=True,
@@ -944,7 +953,7 @@ class FileFilter:
 
         return file_paths
 
-    def _get_home_directory_chunks(self, repo_exclusions: Set[str]) -> List[Path]:
+    def _get_home_directory_chunks(self, repo_exclusions: set[str]) -> list[Path]:
         """Split home directory into chunks for parallel processing."""
         home_dir = Path.home()
         chunks = []
@@ -978,8 +987,8 @@ class FileFilter:
         return chunks
 
     def _get_directory_chunks(
-        self, base_path: Path, repo_exclusions: Set[str]
-    ) -> List[Path]:
+        self, base_path: Path, repo_exclusions: set[str]
+    ) -> list[Path]:
         """Split a directory tree into chunks for parallel processing."""
         chunks = []
 
@@ -1000,8 +1009,8 @@ class FileFilter:
         return chunks
 
     def _find_files_in_chunk(
-        self, search_path: Path, repo_exclusions: Set[str]
-    ) -> List[Path]:
+        self, search_path: Path, repo_exclusions: set[str]
+    ) -> list[Path]:
         """Find files in a specific directory chunk."""
         if search_path == Path.home():
             # Special handling for home directory root - use maxdepth 1
@@ -1021,7 +1030,7 @@ class FileFilter:
 
         try:
             result = subprocess.run(
-                find_cmd + ["-print0"], capture_output=True, text=True, timeout=60
+                [*find_cmd, "-print0"], capture_output=True, text=True, timeout=60
             )
             if result.returncode == 0 and result.stdout.strip():
                 files = [Path(f) for f in result.stdout.rstrip("\0").split("\0") if f]
@@ -1052,7 +1061,7 @@ class FileFilter:
         # Check include patterns
         return self._matches_patterns(file_path, self.config.include_patterns)
 
-    def _get_focused_search_paths(self) -> List[str]:
+    def _get_focused_search_paths(self) -> list[str]:
         """Get focused search paths for home directory scanning."""
         home_dir = Path.home()
         search_paths = []
@@ -1087,7 +1096,7 @@ class FileFilter:
 
     def _fallback_file_discovery(
         self, base_path: Path, verbose: bool, console: Optional[RichConsole]
-    ) -> List[Path]:
+    ) -> list[Path]:
         """Fallback to basic file discovery if find fails."""
         if verbose and console:
             console.print("[yellow]Using fallback file discovery method...[/yellow]")
@@ -1123,7 +1132,7 @@ class FileFilter:
 
         return list(set(included_files))  # Remove duplicates
 
-    def _matches_patterns(self, path: Path, patterns: List[str]) -> bool:
+    def _matches_patterns(self, path: Path, patterns: list[str]) -> bool:
         """Pattern matching using glob-style patterns with ** support."""
         import fnmatch
 
@@ -1188,7 +1197,7 @@ class FileFilter:
                         return True
         return False
 
-    def get_filter_stats(self) -> Dict[str, Any]:
+    def get_filter_stats(self) -> dict[str, Any]:
         """Get statistics about the filtering process."""
         git_stats = self.git_detector.get_repository_stats()
 

@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import yaml
 from platformdirs import user_config_dir
@@ -87,7 +87,7 @@ class GitConfig(BaseModel):
         True  # Always include .git directory for complete restoration
     )
     backup_complete_git: bool = True  # New field to ensure complete git backup
-    gitignore_override_patterns: List[str] = Field(
+    gitignore_override_patterns: list[str] = Field(
         default_factory=lambda: [
             "**/.env*",  # Environment files
             "**/*.env",  # Alternative env format
@@ -123,7 +123,7 @@ class BackupConfig(BaseModel):
     restore: RestoreConfig = RestoreConfig()
 
     # Whitelist of dot directories at root of home directory that should be included
-    dot_directory_whitelist: List[str] = Field(
+    dot_directory_whitelist: list[str] = Field(
         default_factory=lambda: [
             ".ssh",  # SSH keys and config
             ".gnupg",  # GPG keys
@@ -134,7 +134,7 @@ class BackupConfig(BaseModel):
         ]
     )
 
-    include_patterns: List[str] = Field(
+    include_patterns: list[str] = Field(
         default_factory=lambda: [
             # Programming and code files
             "**/*.py",
@@ -245,7 +245,7 @@ class BackupConfig(BaseModel):
         ]
     )
 
-    exclude_patterns: List[str] = Field(
+    exclude_patterns: list[str] = Field(
         default_factory=lambda: [
             # Build artifacts and caches (applied outside git repos only)
             "**/node_modules/**",
@@ -281,7 +281,7 @@ class BackupConfig(BaseModel):
         ]
     )
 
-    always_exclude: List[str] = Field(
+    always_exclude: list[str] = Field(
         default_factory=lambda: [
             # OS files
             "**/.DS_Store",
@@ -388,7 +388,7 @@ class ConfigManager:
         return BackupConfig()
 
     @classmethod
-    def load_user_config(cls) -> Optional[Dict[str, Any]]:
+    def load_user_config(cls) -> Optional[dict[str, Any]]:
         """Load user configuration from ~/.config/sysforge/user-backup.yaml."""
         if not cls.USER_CONFIG_FILE.exists():
             return None
@@ -401,7 +401,7 @@ class ConfigManager:
             return None
 
     @classmethod
-    def load_profile_config(cls, profile_name: str) -> Optional[Dict[str, Any]]:
+    def load_profile_config(cls, profile_name: str) -> Optional[dict[str, Any]]:
         """Load configuration from a named profile."""
         profile_file = cls.PROFILES_DIR / f"{profile_name}.yaml"
         if not profile_file.exists():
@@ -415,7 +415,7 @@ class ConfigManager:
             return None
 
     @classmethod
-    def load_config_file(cls, config_path: Path) -> Optional[Dict[str, Any]]:
+    def load_config_file(cls, config_path: Path) -> Optional[dict[str, Any]]:
         """Load configuration from a specific file."""
         if not config_path.exists():
             return None
@@ -428,9 +428,9 @@ class ConfigManager:
             return None
 
     @classmethod
-    def merge_configs(cls, *configs: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    def merge_configs(cls, *configs: Optional[dict[str, Any]]) -> dict[str, Any]:
         """Merge multiple configuration dictionaries."""
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
 
         for config in configs:
             if config is not None:
@@ -439,7 +439,7 @@ class ConfigManager:
         return result
 
     @classmethod
-    def _deep_merge(cls, target: Dict[str, Any], source: Dict[str, Any]) -> None:
+    def _deep_merge(cls, target: dict[str, Any], source: dict[str, Any]) -> None:
         """Recursively merge source into target."""
         for key, value in source.items():
             if (
@@ -456,7 +456,7 @@ class ConfigManager:
         cls,
         profile: Optional[str] = None,
         config_file: Optional[Path] = None,
-        overrides: Optional[Dict[str, Any]] = None,
+        overrides: Optional[dict[str, Any]] = None,
     ) -> BackupConfig:
         """Load the effective configuration with proper hierarchy."""
         cls.ensure_config_dirs()
@@ -485,7 +485,7 @@ class ConfigManager:
         return BackupConfig(**merged_config)
 
     @classmethod
-    def save_user_config(cls, config: Dict[str, Any]) -> None:
+    def save_user_config(cls, config: dict[str, Any]) -> None:
         """Save user configuration to file."""
         cls.ensure_config_dirs()
 
@@ -493,7 +493,7 @@ class ConfigManager:
             yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
     @classmethod
-    def save_profile_config(cls, profile_name: str, config: Dict[str, Any]) -> None:
+    def save_profile_config(cls, profile_name: str, config: dict[str, Any]) -> None:
         """Save profile configuration to file."""
         cls.ensure_config_dirs()
 
@@ -502,7 +502,7 @@ class ConfigManager:
             yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
     @classmethod
-    def list_profiles(cls) -> List[str]:
+    def list_profiles(cls) -> list[str]:
         """List available configuration profiles."""
         cls.ensure_config_dirs()
 
@@ -513,11 +513,11 @@ class ConfigManager:
         return sorted(profiles)
 
     @classmethod
-    def list_backups(cls) -> List[Path]:
+    def list_backups(cls) -> list[Path]:
         """List available backup files."""
         cls.ensure_config_dirs()
 
-        backups: List[Path] = []
+        backups: list[Path] = []
         for pattern in ["*.tar.zst", "*.tar.lz4", "*.tar.gz", "*.tar"]:
             backups.extend(cls.BACKUPS_DIR.glob(pattern))
 

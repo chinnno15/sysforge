@@ -28,7 +28,7 @@ def get_system_info() -> SystemInfo:
     """Get comprehensive system information.
 
     Returns:
-        SystemInfo object with current system metrics.
+        SystemInfo: SystemInfo object with current system metrics.
     """
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
@@ -70,7 +70,7 @@ def get_process_list(
         limit: Maximum number of processes to return.
 
     Returns:
-        List of ProcessInfo objects.
+        list[ProcessInfo]: List of ProcessInfo objects.
     """
     processes = []
 
@@ -128,7 +128,7 @@ def get_network_interfaces() -> list[NetworkInterface]:
     """Get list of network interfaces.
 
     Returns:
-        List of NetworkInterface objects.
+        list[NetworkInterface]: List of NetworkInterface objects.
     """
     interfaces = []
     addrs = psutil.net_if_addrs()
@@ -178,7 +178,7 @@ def get_network_stats() -> NetworkStats:
     """Get network I/O statistics.
 
     Returns:
-        NetworkStats object with current metrics.
+        NetworkStats: NetworkStats object with current metrics.
     """
     net_io = psutil.net_io_counters()
 

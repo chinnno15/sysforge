@@ -16,7 +16,7 @@ def create_table(
         columns: List of (name, style) tuples for columns.
 
     Returns:
-        Configured Rich Table object.
+        Table: Configured Rich Table object.
     """
     table = Table(title=title, show_header=True)
 
@@ -35,7 +35,7 @@ def format_bytes(bytes_value: float, precision: int = 2) -> str:
         precision: Decimal precision.
 
     Returns:
-        Formatted string (e.g., "1.23 GB").
+        str: Formatted string (e.g., "1.23 GB").
     """
     for unit in ["B", "KB", "MB", "GB", "TB"]:
         if bytes_value < 1024.0:
@@ -53,7 +53,7 @@ def format_percentage(value: float, precision: int = 1) -> str:
         precision: Decimal precision.
 
     Returns:
-        Formatted percentage string.
+        str: Formatted percentage string.
     """
     return f"{value:.{precision}f}%"
 
@@ -65,7 +65,7 @@ def format_uptime(seconds: float) -> str:
         seconds: Uptime in seconds.
 
     Returns:
-        Formatted uptime string.
+        str: Formatted uptime string.
     """
     days = int(seconds // 86400)
     hours = int((seconds % 86400) // 3600)

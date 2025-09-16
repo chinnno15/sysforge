@@ -3,9 +3,9 @@
 import gzip
 import tarfile
 from pathlib import Path
-from typing import BinaryIO, Optional, Any
+from typing import Any, BinaryIO, Optional
 
-import lz4.frame
+import lz4.frame  # type: ignore[import-untyped]
 import zstandard as zstd
 
 from .config import CompressionFormat
@@ -103,7 +103,7 @@ class CompressedTarFile:
         self._compressed_file: Optional[BinaryIO] = None
         self._tar_file: Optional[tarfile.TarFile] = None
 
-    def __enter__(self) -> 'CompressedTarFile':
+    def __enter__(self) -> "CompressedTarFile":
         """Enter context manager."""
         self._output_file = open(self.output_path, "wb")
         self._compressed_file = self.compressor.create_compressor(self._output_file)
@@ -202,7 +202,9 @@ class Decompressor:
 
     @staticmethod
     def extract_archive(
-        archive_path: Path, extract_to: Path, members: Optional[list[tarfile.TarInfo]] = None
+        archive_path: Path,
+        extract_to: Path,
+        members: Optional[list[tarfile.TarInfo]] = None,
     ) -> None:
         """Extract archive to specified directory."""
         extract_to.mkdir(parents=True, exist_ok=True)

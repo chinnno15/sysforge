@@ -13,7 +13,7 @@ from sysforge.backup.git import GitRepository
 class TestGitIgnoreSupport:
     """Test gitignore functionality in backup filtering."""
 
-    def create_test_repo_with_gitignore(self, repo_path: Path):
+    def create_test_repo_with_gitignore(self, repo_path: Path) -> git.Repo:
         """Create a test git repository with .gitignore file."""
         repo = git.Repo.init(repo_path)
 
@@ -194,7 +194,7 @@ __pycache__/
             repo_path.mkdir()
 
             # Create test repository
-            test_repo = self.create_test_repo_with_gitignore(repo_path)
+            self.create_test_repo_with_gitignore(repo_path)
 
             # Configure backup to respect gitignore
             config = BackupConfig()
@@ -268,10 +268,12 @@ node_modules/
             repo.index.commit("Initial commit")
 
             # Configure backup with default gitignore override patterns
-            config = BackupConfig(exclude_patterns=[], always_exclude=[])
-            config.git.respect_gitignore = True
+            backup_config: BackupConfig = BackupConfig(
+                exclude_patterns=[], always_exclude=[]
+            )
+            backup_config.git.respect_gitignore = True
             # Default gitignore_override_patterns should include .env patterns
-            file_filter = FileFilter(config)
+            file_filter = FileFilter(backup_config)
 
             # Mock git detector to return our repository
             git_repo = GitRepository(repo_path, repo)
@@ -387,11 +389,11 @@ build/
             repo.index.commit("Initial commit")
 
             # Configure backup with default settings (includes .env override)
-            config = BackupConfig()
-            config.git.respect_gitignore = True
-            config.include_patterns = ["**/*"]  # Include all by default
-            config.exclude_patterns = []  # Remove default excludes for cleaner test
-            file_filter = FileFilter(config)
+            backup_config: BackupConfig = BackupConfig()
+            backup_config.git.respect_gitignore = True
+            backup_config.include_patterns = ["**/*"]  # Include all by default
+            backup_config.exclude_patterns = []  # Remove default excludes for cleaner test
+            file_filter = FileFilter(backup_config)
 
             # Get filtered files
             files = file_filter.get_filtered_files(repo_path)

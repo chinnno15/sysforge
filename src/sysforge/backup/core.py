@@ -5,7 +5,7 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from rich.console import Console
 from rich.progress import Progress
@@ -55,7 +55,7 @@ class BackupOperation:
         self.total_size = 0
         self.processed_files = 0
         self.skipped_files = 0
-        self.errors: List[tuple[Path, str]] = []
+        self.errors: list[tuple[Path, str]] = []
         self.start_time: Optional[datetime] = None
         self.end_time: Optional[datetime] = None
 
@@ -69,7 +69,7 @@ class BackupOperation:
         target_path: Optional[Path] = None,
         output_path: Optional[Path] = None,
         dry_run: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create a backup of the target directory.
 
         Args:
@@ -78,7 +78,10 @@ class BackupOperation:
             dry_run: If True, only show what would be backed up
 
         Returns:
-            Dictionary with backup statistics and information
+            dict[str, Any]: Dictionary with backup statistics and information
+
+        Raises:
+            FileNotFoundError: If target path does not exist
         """
         self.start_time = datetime.now()
 
@@ -190,7 +193,7 @@ class BackupOperation:
             return 0
 
     def _create_archive(
-        self, files_to_backup: List[Path], target_path: Path, output_path: Path
+        self, files_to_backup: list[Path], target_path: Path, output_path: Path
     ) -> None:
         """Create the backup archive."""
         self.console.print(f"[green]Creating archive: {output_path.name}[/green]")
@@ -230,7 +233,7 @@ class BackupOperation:
                         progress.update(task, advance=1)
 
     def _add_metadata(
-        self, archive: CompressedTarFile, target_path: Path, files_to_backup: List[Path]
+        self, archive: CompressedTarFile, target_path: Path, files_to_backup: list[Path]
     ) -> None:
         """Add backup metadata to the archive."""
         metadata = {
@@ -251,7 +254,7 @@ class BackupOperation:
         archive.add_string(metadata_json, ".backup_metadata.json")
 
     def _show_dry_run_results(
-        self, files_to_backup: List[Path], target_path: Path
+        self, files_to_backup: list[Path], target_path: Path
     ) -> None:
         """Show dry run results."""
         self.console.print(
@@ -362,8 +365,8 @@ class BackupOperation:
         self,
         target_path: Path,
         output_path: Path,
-        files_list: Optional[List[Path]] = None,
-    ) -> Dict[str, Any]:
+        files_list: Optional[list[Path]] = None,
+    ) -> dict[str, Any]:
         """Get backup information dictionary."""
         duration = (
             self.end_time - self.start_time
@@ -410,7 +413,7 @@ def create_backup(
     dry_run: bool = False,
     verbose: bool = False,
     console: Optional[Console] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Convenience function to create a backup.
 
     Args:
@@ -422,7 +425,7 @@ def create_backup(
         console: Rich console for output
 
     Returns:
-        Dictionary with backup information and statistics
+        dict[str, Any]: Dictionary with backup information and statistics
     """
     backup_op = BackupOperation(config, console)
     backup_op.verbose = verbose

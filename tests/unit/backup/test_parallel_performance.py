@@ -138,7 +138,6 @@ class TestParallelFileFilter:
             base_path = Path(temp_dir)
 
             # Mock repository exclusions
-            repo_exclusions = {"/fake/repo1", "/fake/repo2"}
 
             # Mock the chunk processing
             with patch.object(file_filter, "_get_directory_chunks") as mock_chunks:

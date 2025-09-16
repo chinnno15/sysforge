@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 import git
 from git import InvalidGitRepositoryError, NoSuchPathError
@@ -36,7 +36,7 @@ class GitRepository:
         except (ValueError, git.GitCommandError):
             return False
 
-    def get_untracked_files(self) -> List[Path]:
+    def get_untracked_files(self) -> list[Path]:
         """Get list of untracked files."""
         try:
             repo_root = Path(self.repo.working_dir).resolve()
@@ -45,7 +45,7 @@ class GitRepository:
         except git.GitCommandError:
             return []
 
-    def get_ignored_files(self) -> List[Path]:
+    def get_ignored_files(self) -> list[Path]:
         """Get list of ignored files."""
         try:
             repo_root = Path(self.repo.working_dir).resolve()
@@ -78,7 +78,7 @@ class GitRepository:
         except (ValueError, git.GitCommandError):
             return False
 
-    def get_all_repo_files(self, include_git_dir: bool = True) -> List[Path]:
+    def get_all_repo_files(self, include_git_dir: bool = True) -> list[Path]:
         """Get ALL files in repository including .git directory and ignored files."""
         repo_root = Path(self.repo.working_dir)
         all_files = []
@@ -137,7 +137,7 @@ class GitRepository:
 
         return unique_files
 
-    def get_override_files(self, patterns: List[str]) -> List[Path]:
+    def get_override_files(self, patterns: list[str]) -> list[Path]:
         """Get files matching override patterns, including ignored files."""
         repo_root = Path(self.repo.working_dir)
         override_files = []
@@ -222,19 +222,19 @@ class GitDetector:
     """Detects and manages Git repositories in a directory tree."""
 
     def __init__(self) -> None:
-        self._repositories: Dict[Path, GitRepository] = {}
-        self._scanned_paths: Set[Path] = set()
+        self._repositories: dict[Path, GitRepository] = {}
+        self._scanned_paths: set[Path] = set()
 
     def find_repositories(
         self, base_path: Path, file_filter: Optional[Any] = None
-    ) -> List[GitRepository]:
+    ) -> list[GitRepository]:
         """Find all Git repositories under the given path."""
-        repositories: List[GitRepository] = []
+        repositories: list[GitRepository] = []
         scanned_dirs = 0
 
         # Walk the directory tree
         try:
-            for root, dirs, files in os.walk(base_path):
+            for root, dirs, _files in os.walk(base_path):
                 root_path = Path(root)
                 scanned_dirs += 1
 
@@ -312,7 +312,7 @@ class GitDetector:
         path = path.resolve()
 
         # Check cached repositories first
-        for repo_path, repo in self._repositories.items():
+        for _repo_path, repo in self._repositories.items():
             if repo.contains_path(path):
                 return repo
 
@@ -360,7 +360,7 @@ class GitDetector:
         # (unless explicitly configured otherwise)
         return True
 
-    def get_repository_stats(self) -> Dict[str, int]:
+    def get_repository_stats(self) -> dict[str, int]:
         """Get statistics about detected repositories."""
         return {
             "total_repositories": len(self._repositories),
@@ -373,7 +373,7 @@ class GitDetector:
         self._scanned_paths.clear()
 
 
-def find_git_repositories(base_path: Path) -> List[GitRepository]:
+def find_git_repositories(base_path: Path) -> list[GitRepository]:
     """Convenience function to find all git repositories under a path."""
     detector = GitDetector()
     return detector.find_repositories(base_path)

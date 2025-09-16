@@ -13,14 +13,14 @@ from sysforge.backup.config import BackupConfig
 class TestGitBackupIntegration:
     """Test git repository backup and restore functionality."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Set up test environment."""
         # Use a directory that won't match exclude patterns
         self.temp_dir = Path(tempfile.mkdtemp(dir=os.path.expanduser("~")))
         self.backup_dir = self.temp_dir / "backups"
         self.backup_dir.mkdir()
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         """Clean up test environment."""
         import shutil
 
@@ -61,7 +61,7 @@ class TestGitBackupIntegration:
         # Create test git repository
         repo_path = self.temp_dir / "test_repo"
         repo_path.mkdir()
-        test_repo = self.create_test_git_repo(repo_path)
+        self.create_test_git_repo(repo_path)
 
         # Ensure we have git objects
         objects_dir = repo_path / ".git" / "objects"
@@ -98,7 +98,7 @@ class TestGitBackupIntegration:
         # Create test git repository with node_modules
         repo_path = self.temp_dir / "test_repo"
         repo_path.mkdir()
-        test_repo = self.create_test_git_repo(repo_path)
+        self.create_test_git_repo(repo_path)
 
         # Create node_modules directory (should be excluded)
         node_modules = repo_path / "node_modules"
@@ -140,8 +140,8 @@ class TestGitBackupIntegration:
         test_repo = self.create_test_git_repo(original_repo_path)
 
         # Get original commit info
-        original_commits = list(test_repo.iter_commits())
-        original_branches = [branch.name for branch in test_repo.branches]
+        list(test_repo.iter_commits())
+        [branch.name for branch in test_repo.branches]
 
         # Create backup config
         config = BackupConfig()
