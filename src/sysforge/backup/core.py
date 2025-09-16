@@ -100,9 +100,10 @@ class BackupOperation:
             f"\n[bold blue]Creating backup of:[/bold blue] {target_path}"
         )
         self.console.print(f"[bold blue]Output:[/bold blue] {output_path}")
-        self.console.print(
-            f"[bold blue]Compression:[/bold blue] {self.config.compression.format} (level {self.config.compression.level})"
+        compression_info = (
+            f"{self.config.compression.format} (level {self.config.compression.level})"
         )
+        self.console.print(f"[bold blue]Compression:[/bold blue] {compression_info}")
 
         # Reset statistics
         self._reset_stats()
@@ -156,8 +157,9 @@ class BackupOperation:
             self._get_file_size(file_path) for file_path in files_to_backup
         )
 
+        size_str = self._format_size(self.total_size)
         self.console.print(
-            f"[green]Found {self.total_files:,} files ({self._format_size(self.total_size)})[/green]"
+            f"[green]Found {self.total_files:,} files ({size_str})[/green]"
         )
 
         if dry_run:

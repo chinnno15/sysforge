@@ -160,12 +160,17 @@ ignore = [
   "Q002",
   "Q003",
   "W191",
+  "S110",  # try-except-pass is acceptable for filters
+  "S603",  # subprocess with known safe commands
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "*/test_*.py" = ["S101"]
 "noxfile.py" = ["S101"]
 "**/conftest.py" = ["S101"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
