@@ -83,139 +83,147 @@ class GitRepository:
         repo_root = Path(self.repo.working_dir)
         all_files = []
 
-        # Always include the entire .git directory if requested
+        # Add .git directory files if requested
         if include_git_dir:
-            git_dir = repo_root / ".git"
-            if git_dir.exists():
-                # Recursively get all files in .git directory
-                for file_path in git_dir.rglob("*"):
-                    if file_path.is_file():
-                        all_files.append(file_path)
+            all_files.extend(self._get_git_directory_files(repo_root))
 
-        # Get all tracked files
+        # Add all repository files
+        all_files.extend(self._get_tracked_files(repo_root))
+        all_files.extend(self._get_untracked_files(repo_root))
+        all_files.extend(self._get_ignored_files(repo_root))
+
+        return self._deduplicate_files(all_files)
+
+    def _get_git_directory_files(self, repo_root: Path) -> list[Path]:
+        """Get all files in the .git directory."""
+        git_dir = repo_root / ".git"
+        if not git_dir.exists():
+            return []
+
+        return [file_path for file_path in git_dir.rglob("*") if file_path.is_file()]
+
+    def _get_tracked_files(self, repo_root: Path) -> list[Path]:
+        """Get all tracked files from git."""
         try:
             tracked_output = self.repo.git.ls_files()
-            if tracked_output:
-                tracked = tracked_output.split("\n")
-                for file in tracked:
-                    if file:
-                        all_files.append(repo_root / file)
+            if not tracked_output:
+                return []
+            return [repo_root / file for file in tracked_output.split("\n") if file]
         except git.GitCommandError:
-            pass
+            return []
 
-        # Get all untracked files (including ignored)
+    def _get_untracked_files(self, repo_root: Path) -> list[Path]:
+        """Get all untracked files from git."""
         try:
             untracked_output = self.repo.git.ls_files("--others")
-            if untracked_output:
-                untracked = untracked_output.split("\n")
-                for file in untracked:
-                    if file:
-                        all_files.append(repo_root / file)
+            if not untracked_output:
+                return []
+            return [repo_root / file for file in untracked_output.split("\n") if file]
         except git.GitCommandError:
-            pass
+            return []
 
-        # Get all ignored files explicitly
+    def _get_ignored_files(self, repo_root: Path) -> list[Path]:
+        """Get all ignored files from git."""
         try:
             ignored_output = self.repo.git.ls_files(
                 "--others", "--ignored", "--exclude-standard"
             )
-            if ignored_output:
-                ignored = ignored_output.split("\n")
-                for file in ignored:
-                    if file:
-                        all_files.append(repo_root / file)
+            if not ignored_output:
+                return []
+            return [repo_root / file for file in ignored_output.split("\n") if file]
         except git.GitCommandError:
-            pass
+            return []
 
-        # Remove duplicates and ensure all files exist
+    def _deduplicate_files(self, all_files: list[Path]) -> list[Path]:
+        """Remove duplicates and ensure all files exist."""
         unique_files = []
         seen = set()
         for file_path in all_files:
             if file_path not in seen and file_path.exists() and file_path.is_file():
                 unique_files.append(file_path)
                 seen.add(file_path)
-
         return unique_files
 
     def get_override_files(self, patterns: list[str]) -> list[Path]:
         """Get files matching override patterns, including ignored files."""
         repo_root = Path(self.repo.working_dir)
-        override_files = []
 
-        # Import fnmatch for pattern matching
-        import fnmatch
+        # Get all candidate files from git and filesystem
+        all_candidate_files = self._get_all_candidate_files(repo_root, patterns)
 
-        # Get all files that exist in the repository (tracked, untracked, and ignored)
-        all_candidate_files = []
+        # Filter files by patterns
+        override_files = self._filter_files_by_patterns(
+            all_candidate_files, repo_root, patterns
+        )
 
-        # Get all files from git repository
-        try:
-            # Get tracked files
-            tracked_output = self.repo.git.ls_files()
-            if tracked_output:
-                files = tracked_output.split("\n")
-                for file in files:
-                    if file:
-                        all_candidate_files.append(repo_root / file)
-        except git.GitCommandError:
-            pass
+        return list(set(override_files))
 
-        try:
-            # Get untracked files
-            untracked_output = self.repo.git.ls_files("--others")
-            if untracked_output:
-                files = untracked_output.split("\n")
-                for file in files:
-                    if file:
-                        all_candidate_files.append(repo_root / file)
-        except git.GitCommandError:
-            pass
+    def _get_all_candidate_files(
+        self, repo_root: Path, patterns: list[str]
+    ) -> list[Path]:
+        """Get all files that could match override patterns."""
+        all_files = []
 
-        try:
-            # Get ignored files
-            ignored_output = self.repo.git.ls_files(
-                "--others", "--ignored", "--exclude-standard"
-            )
-            if ignored_output:
-                files = ignored_output.split("\n")
-                for file in files:
-                    if file:
-                        all_candidate_files.append(repo_root / file)
-        except git.GitCommandError:
-            pass
+        # Get files from git
+        all_files.extend(self._get_tracked_files(repo_root))
+        all_files.extend(self._get_untracked_files(repo_root))
+        all_files.extend(self._get_ignored_files(repo_root))
 
-        # Also search filesystem using glob patterns directly
+        # Get files from filesystem using glob patterns
+        all_files.extend(self._get_glob_matches(repo_root, patterns))
+
+        return all_files
+
+    def _get_glob_matches(self, repo_root: Path, patterns: list[str]) -> list[Path]:
+        """Get files matching glob patterns from filesystem."""
+        glob_files = []
         for pattern in patterns:
-            # Remove leading **/ from pattern for rglob
             glob_pattern = pattern.replace("**/", "")
             try:
                 matching_files = list(repo_root.rglob(glob_pattern))
-                all_candidate_files.extend(matching_files)
-            except Exception:
-                # Ignore glob errors
-                pass
+                glob_files.extend(matching_files)
+            except Exception as e:
+                # Skip invalid glob patterns
+                print(f"Warning: skipping invalid glob pattern '{glob_pattern}': {e}")
+                continue
+        return glob_files
 
-        # Filter all candidate files by patterns
-        for file_path in all_candidate_files:
-            if file_path.exists() and file_path.is_file():
-                try:
-                    relative_path = str(file_path.relative_to(repo_root))
-                    for pattern in patterns:
-                        # Convert glob pattern to fnmatch pattern for relative path
-                        glob_pattern = pattern.replace("**/", "")
-                        if (
-                            fnmatch.fnmatch(relative_path, glob_pattern)
-                            or fnmatch.fnmatch(file_path.name, glob_pattern)
-                            or fnmatch.fnmatch(relative_path, pattern)
-                        ):
-                            override_files.append(file_path)
-                            break
-                except ValueError:
-                    # Skip files that can't be made relative to repo_root
-                    continue
+    def _filter_files_by_patterns(
+        self, files: list[Path], repo_root: Path, patterns: list[str]
+    ) -> list[Path]:
+        """Filter files that match the given patterns."""
+        import fnmatch
 
-        # Remove duplicates
-        return list(set(override_files))
+        override_files = []
+        for file_path in files:
+            if not (file_path.exists() and file_path.is_file()):
+                continue
+
+            matches = self._file_matches_patterns(
+                file_path, repo_root, patterns, fnmatch
+            )
+            if matches:
+                override_files.append(file_path)
+
+        return override_files
+
+    def _file_matches_patterns(
+        self, file_path: Path, repo_root: Path, patterns: list[str], fnmatch
+    ) -> bool:
+        """Check if a file matches any of the given patterns."""
+        try:
+            relative_path = str(file_path.relative_to(repo_root))
+            for pattern in patterns:
+                glob_pattern = pattern.replace("**/", "")
+                if (
+                    fnmatch.fnmatch(relative_path, glob_pattern)
+                    or fnmatch.fnmatch(file_path.name, glob_pattern)
+                    or fnmatch.fnmatch(relative_path, pattern)
+                ):
+                    return True
+        except ValueError:
+            pass
+        return False
 
 
 class GitDetector:

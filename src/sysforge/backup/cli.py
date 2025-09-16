@@ -39,7 +39,7 @@ def _load_config(
         )
     except Exception as e:
         console.print(f"[red]Error loading configuration: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _complete_backup_files(incomplete: str) -> list[str]:
@@ -189,14 +189,14 @@ def create_backup_command(
 
     except KeyboardInterrupt:
         console.print("\n[red]Backup cancelled by user[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except Exception as e:
         console.print(f"\n[red]Backup failed: {e}[/red]")
         if verbose:
             import traceback
 
             console.print(traceback.format_exc())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @backup_app.command("restore")
@@ -323,14 +323,14 @@ def restore_backup_command(
 
     except KeyboardInterrupt:
         console.print("\n[red]Restore cancelled by user[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except Exception as e:
         console.print(f"\n[red]Restore failed: {e}[/red]")
         if verbose:
             import traceback
 
             console.print(traceback.format_exc())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @backup_app.command("config")
@@ -388,9 +388,10 @@ def config_command(
 
             # Open in editor
             import os
+            import subprocess
 
             editor = os.environ.get("EDITOR", "nano")
-            os.system(f"{editor} {config_file}")
+            subprocess.run([editor, str(config_file)], check=False)
 
         elif action == "validate":
             # Validate configuration
@@ -399,7 +400,7 @@ def config_command(
                 console.print("[green]Configuration is valid[/green]")
             except Exception as e:
                 console.print(f"[red]Configuration validation failed: {e}[/red]")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from e
 
         elif action == "reset":
             # Reset to default configuration
@@ -428,7 +429,7 @@ def config_command(
 
     except Exception as e:
         console.print(f"[red]Configuration command failed: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @backup_app.command("list")
@@ -478,7 +479,7 @@ def list_command(
 
     except Exception as e:
         console.print(f"[red]List command failed: {e}[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @backup_app.command("benchmark")
@@ -505,9 +506,9 @@ def benchmark_command(
     # Parse worker counts
     try:
         worker_counts = [int(w.strip()) for w in workers.split(",")]
-    except ValueError:
+    except ValueError as e:
         console.print("[red]Error: Invalid worker counts format. Use '1,2,4,8'[/red]")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     console.print(f"[bold blue]Benchmarking backup performance on: {path}[/bold blue]")
     console.print(f"[dim]Worker counts: {worker_counts}[/dim]")

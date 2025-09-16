@@ -443,7 +443,10 @@ class TestFileFilter:
                             (),
                             {
                                 "returncode": 0,
-                                "stdout": f"{src_dir / 'main.py'}\0{src_dir / 'utils.py'}\0{base_path / 'readme.txt'}\0",
+                                "stdout": (
+                                    f"{src_dir / 'main.py'}\0{src_dir / 'utils.py'}\0"
+                                    f"{base_path / 'readme.txt'}\0"
+                                ),
                                 "stderr": "",
                             },
                         )()

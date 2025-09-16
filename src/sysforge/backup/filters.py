@@ -382,9 +382,8 @@ class FileFilter:
             if verbose and console:
                 git_file_count = len(git_files_filtered)
                 repo_count = len(git_repos)
-                console.print(
-                    f"[dim]Added {git_file_count} files from {repo_count} git repos[/dim]"
-                )
+                msg = f"Added {git_file_count} files from {repo_count} git repos"
+                console.print(f"[dim]{msg}[/dim]")
                 if self.config.git.respect_gitignore:
                     console.print(
                         "[dim]  - Respects gitignore but includes .git dirs[/dim]"
@@ -501,7 +500,20 @@ class FileFilter:
         home_dir = Path.home()
         all_files = []
 
-        # First: scan home directory root with maxdepth 1
+        # Scan home directory root
+        root_files = self._scan_home_root(home_dir, verbose, console)
+        all_files.extend(root_files)
+
+        # Scan important subdirectories
+        subdir_files = self._scan_home_subdirectories(home_dir, verbose, console)
+        all_files.extend(subdir_files)
+
+        return all_files
+
+    def _scan_home_root(
+        self, home_dir: Path, verbose: bool, console: Optional[RichConsole]
+    ) -> list[Path]:
+        """Scan home directory root for config files."""
         if verbose and console:
             console.print("[dim]Scanning home directory root for config files...[/dim]")
 
@@ -517,17 +529,23 @@ class FileFilter:
             if result.returncode == 0 and result.stdout.strip():
                 files = result.stdout.rstrip("\0").split("\0")
                 root_files = [Path(f) for f in files if f]
-                all_files.extend(root_files)
                 if verbose and console:
                     file_count = len(root_files)
                     console.print(
                         f"[dim]Found {file_count} files in home directory root[/dim]"
                     )
+                return root_files
         except Exception as e:
             if verbose and console:
                 console.print(f"[dim]Error scanning home root: {e}[/dim]")
+        return []
 
-        # Second: scan important subdirectories
+    def _scan_home_subdirectories(
+        self, home_dir: Path, verbose: bool, console: Optional[RichConsole]
+    ) -> list[Path]:
+        """Scan important subdirectories in home directory."""
+        all_files = []
+        include_args = []
         subdirs = []
         for dot_dir in self.config.dot_directory_whitelist:
             dot_path = home_dir / dot_dir
