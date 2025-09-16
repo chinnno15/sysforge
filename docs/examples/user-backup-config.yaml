@@ -3,19 +3,19 @@
 
 # Compression settings
 compression:
-  format: "zstd"  # zstd (fastest), lz4 (very fast), or gzip (compatible)
-  level: 3        # 1-22 for zstd, 1-12 for lz4, 1-9 for gzip
+  format: "zstd" # zstd (fastest), lz4 (very fast), or gzip (compatible)
+  level: 3 # 1-22 for zstd, 1-12 for lz4, 1-9 for gzip
 
 # Target configuration
 target:
-  base_path: "~/Work"  # Directory to backup
-  output_path: "~/Backups/work-{timestamp}.tar.zst"  # Output archive path
+  base_path: "~/Work" # Directory to backup
+  output_path: "~/Backups/work-{timestamp}.tar.zst" # Output archive path
 
 # Git repository handling
 git:
-  include_repos: true     # Include git repositories
+  include_repos: true # Include git repositories
   respect_gitignore: false # Don't respect .gitignore (backup everything)
-  include_git_dir: true   # Include .git directory
+  include_git_dir: true # Include .git directory
 
 # File patterns for non-git directories
 include_patterns:
@@ -56,9 +56,9 @@ exclude_patterns:
   - "**/*.pyc"
   - "**/.venv/**"
   - "**/venv/**"
-  - "**/target/**"      # Rust builds
-  - "**/build/**"       # General builds
-  - "**/dist/**"        # Distribution files
+  - "**/target/**" # Rust builds
+  - "**/build/**" # General builds
+  - "**/dist/**" # Distribution files
   - "**/.pytest_cache/**"
   - "**/.mypy_cache/**"
   - "**/.ruff_cache/**"
@@ -67,7 +67,7 @@ exclude_patterns:
   - "**/.coverage"
   - "**/.tox/**"
   - "**/htmlcov/**"
-  
+
   # IDE files
   - "**/.vscode/**"
   - "**/.idea/**"
@@ -88,7 +88,7 @@ max_file_size: "100MB"
 
 # Restore settings
 restore:
-  conflict_resolution: "prompt"  # prompt, overwrite, skip, backup
+  conflict_resolution: "prompt" # prompt, overwrite, skip, backup
   preserve_permissions: true
   create_backup_on_conflict: true
   backup_suffix: ".backup-{timestamp}"

@@ -18,8 +18,12 @@ class Settings(BaseSettings):
     )
 
     # Display settings
-    default_top_processes: int = Field(10, description="Default number of top processes to show")
-    default_sort_by: str = Field("cpu", description="Default sort criteria for processes")
+    default_top_processes: int = Field(
+        10, description="Default number of top processes to show"
+    )
+    default_sort_by: str = Field(
+        "cpu", description="Default sort criteria for processes"
+    )
 
     # Performance settings
     cpu_interval: float = Field(1.0, description="CPU sampling interval in seconds")

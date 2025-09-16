@@ -50,16 +50,16 @@ class RestoreOperation:
         archive_path: Path,
         target_dir: Optional[Path] = None,
         dry_run: bool = False,
-        pattern_filter: Optional[str] = None
+        pattern_filter: Optional[str] = None,
     ) -> Dict[str, int]:
         """Restore files from backup archive.
-        
+
         Args:
             archive_path: Path to backup archive
             target_dir: Target directory (default: original location)
             dry_run: If True, only show what would be restored
             pattern_filter: Optional pattern to filter files
-        
+
         Returns:
             Dictionary with restore statistics
         """
@@ -83,8 +83,10 @@ class RestoreOperation:
             # Filter members if pattern is provided
             if pattern_filter:
                 import fnmatch
+
                 members = [
-                    member for member in members
+                    member
+                    for member in members
                     if fnmatch.fnmatch(member.name, pattern_filter)
                 ]
 
@@ -113,9 +115,7 @@ class RestoreOperation:
         return self._get_stats()
 
     def _detect_conflicts(
-        self,
-        members: List[tarfile.TarInfo],
-        target_dir: Optional[Path]
+        self, members: List[tarfile.TarInfo], target_dir: Optional[Path]
     ) -> List[ConflictInfo]:
         """Detect conflicts with existing files."""
         conflicts = []
@@ -163,8 +163,8 @@ class RestoreOperation:
             else:
                 action = self._prompt_conflict_resolution(conflict)
 
-                if action.endswith('_all'):
-                    global_choice = action.replace('_all', '')
+                if action.endswith("_all"):
+                    global_choice = action.replace("_all", "")
                     action = global_choice
 
             self._apply_conflict_resolution(conflict, action)
@@ -182,12 +182,12 @@ class RestoreOperation:
         table.add_row(
             "Existing",
             f"{conflict.existing_size:,} bytes",
-            conflict.existing_mtime.strftime("%Y-%m-%d %H:%M:%S")
+            conflict.existing_mtime.strftime("%Y-%m-%d %H:%M:%S"),
         )
         table.add_row(
             "Archive",
             f"{conflict.archive_size:,} bytes",
-            conflict.archive_mtime.strftime("%Y-%m-%d %H:%M:%S")
+            conflict.archive_mtime.strftime("%Y-%m-%d %H:%M:%S"),
         )
 
         self.console.print(table)
@@ -200,7 +200,7 @@ class RestoreOperation:
             ("O", "Overwrite all remaining"),
             ("S", "Skip all remaining"),
             ("B", "Backup all remaining"),
-            ("q", "Quit restore operation")
+            ("q", "Quit restore operation"),
         ]
 
         choice_str = "/".join([choice[0] for choice in choices])
@@ -209,7 +209,7 @@ class RestoreOperation:
             action = Prompt.ask(
                 f"Choose action [{choice_str}]",
                 choices=[choice[0] for choice in choices],
-                default="s"
+                default="s",
             )
 
             if action == "d":
@@ -224,7 +224,9 @@ class RestoreOperation:
 
     def _show_file_diff(self, conflict: ConflictInfo) -> None:
         """Show differences between existing file and archive file."""
-        self.console.print("[yellow]File diff functionality not implemented yet[/yellow]")
+        self.console.print(
+            "[yellow]File diff functionality not implemented yet[/yellow]"
+        )
         # TODO: Implement file diff display
 
     def _apply_conflict_resolution(self, conflict: ConflictInfo, action: str) -> None:
@@ -239,17 +241,23 @@ class RestoreOperation:
 
     def _handle_conflicts_overwrite(self, conflicts: List[ConflictInfo]) -> None:
         """Overwrite all conflicting files."""
-        self.console.print(f"[yellow]Will overwrite {len(conflicts)} existing files[/yellow]")
+        self.console.print(
+            f"[yellow]Will overwrite {len(conflicts)} existing files[/yellow]"
+        )
 
     def _handle_conflicts_skip(self, conflicts: List[ConflictInfo]) -> None:
         """Skip all conflicting files."""
-        self.console.print(f"[yellow]Will skip {len(conflicts)} existing files[/yellow]")
+        self.console.print(
+            f"[yellow]Will skip {len(conflicts)} existing files[/yellow]"
+        )
         for conflict in conflicts:
             self.skipped_files.append(conflict.existing_path)
 
     def _handle_conflicts_backup(self, conflicts: List[ConflictInfo]) -> None:
         """Backup all conflicting files."""
-        self.console.print(f"[yellow]Will backup {len(conflicts)} existing files[/yellow]")
+        self.console.print(
+            f"[yellow]Will backup {len(conflicts)} existing files[/yellow]"
+        )
         for conflict in conflicts:
             self._backup_existing_file(conflict.existing_path)
 
@@ -269,13 +277,14 @@ class RestoreOperation:
         self,
         archive_path: Path,
         members: List[tarfile.TarInfo],
-        target_dir: Optional[Path]
+        target_dir: Optional[Path],
     ) -> None:
         """Extract files from archive."""
         # Filter out skipped files
         skipped_names = {str(path) for path in self.skipped_files}
         members_to_extract = [
-            member for member in members
+            member
+            for member in members
             if self._get_target_path(member.name, target_dir) not in self.skipped_files
         ]
 
@@ -283,7 +292,9 @@ class RestoreOperation:
             self.console.print("[yellow]No files to extract[/yellow]")
             return
 
-        self.console.print(f"[green]Extracting {len(members_to_extract)} files...[/green]")
+        self.console.print(
+            f"[green]Extracting {len(members_to_extract)} files...[/green]"
+        )
 
         # Create target directory if specified
         if target_dir:
@@ -328,15 +339,17 @@ class RestoreOperation:
 
         except (OSError, PermissionError) as e:
             # Log warning but don't fail the restore
-            self.console.print(f"[yellow]Warning: Could not restore permissions for {file_path}: {e}[/yellow]")
+            self.console.print(
+                f"[yellow]Warning: Could not restore permissions for {file_path}: {e}[/yellow]"
+            )
 
     def _show_dry_run_results(
-        self,
-        members: List[tarfile.TarInfo],
-        target_dir: Optional[Path]
+        self, members: List[tarfile.TarInfo], target_dir: Optional[Path]
     ) -> None:
         """Show what would be restored in dry run mode."""
-        self.console.print("\n[bold green]Dry run - files that would be restored:[/bold green]")
+        self.console.print(
+            "\n[bold green]Dry run - files that would be restored:[/bold green]"
+        )
 
         for member in members:
             if member.isfile():
@@ -349,10 +362,14 @@ class RestoreOperation:
         self.console.print("\n[bold green]Restore completed![/bold green]")
 
         if self.restored_files:
-            self.console.print(f"[green]Restored {len(self.restored_files)} files[/green]")
+            self.console.print(
+                f"[green]Restored {len(self.restored_files)} files[/green]"
+            )
 
         if self.skipped_files:
-            self.console.print(f"[yellow]Skipped {len(self.skipped_files)} files[/yellow]")
+            self.console.print(
+                f"[yellow]Skipped {len(self.skipped_files)} files[/yellow]"
+            )
 
         if self.errors:
             self.console.print(f"[red]Errors: {len(self.errors)} files failed[/red]")
@@ -360,7 +377,9 @@ class RestoreOperation:
                 self.console.print(f"  [red]Error:[/red] {file_path} - {error}")
 
             if len(self.errors) > 5:
-                self.console.print(f"  [red]... and {len(self.errors) - 5} more errors[/red]")
+                self.console.print(
+                    f"  [red]... and {len(self.errors) - 5} more errors[/red]"
+                )
 
     def _get_stats(self) -> Dict[str, int]:
         """Get restore operation statistics."""
@@ -368,7 +387,7 @@ class RestoreOperation:
             "restored": len(self.restored_files),
             "skipped": len(self.skipped_files),
             "errors": len(self.errors),
-            "conflicts": len(self.conflicts)
+            "conflicts": len(self.conflicts),
         }
 
 
@@ -378,10 +397,10 @@ def restore_backup(
     target_dir: Optional[Path] = None,
     dry_run: bool = False,
     pattern_filter: Optional[str] = None,
-    console: Optional[Console] = None
+    console: Optional[Console] = None,
 ) -> Dict[str, int]:
     """Convenience function to restore a backup.
-    
+
     Args:
         archive_path: Path to backup archive
         config: Backup configuration
@@ -389,7 +408,7 @@ def restore_backup(
         dry_run: If True, only show what would be restored
         pattern_filter: Optional pattern to filter files
         console: Rich console for output
-    
+
     Returns:
         Dictionary with restore statistics
     """
@@ -398,5 +417,5 @@ def restore_backup(
         archive_path=archive_path,
         target_dir=target_dir,
         dry_run=dry_run,
-        pattern_filter=pattern_filter
+        pattern_filter=pattern_filter,
     )

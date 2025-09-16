@@ -77,6 +77,7 @@ sysforge status
 ```
 
 Shows:
+
 - Hostname and platform information
 - CPU cores and usage
 - Memory statistics
@@ -107,6 +108,7 @@ sysforge network
 ```
 
 Shows:
+
 - Network interface status (UP/DOWN)
 - IP addresses and netmasks
 - Network I/O statistics (bytes sent/received, packets)

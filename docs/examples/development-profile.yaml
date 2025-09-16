@@ -8,7 +8,7 @@ target:
 
 compression:
   format: "zstd"
-  level: 6  # Higher compression for archival
+  level: 6 # Higher compression for archival
 
 git:
   include_repos: true
@@ -84,7 +84,7 @@ exclude_patterns:
   - "**/gradlew*"
   - "**/.mvn/**"
   - "**/mvnw*"
-  
+
   # IDE and editor files
   - "**/.vscode/**"
   - "**/.idea/**"
@@ -95,7 +95,7 @@ exclude_patterns:
   - "**/*.swp"
   - "**/*.swo"
   - "**/*~"
-  
+
   # OS and temporary files
   - "**/.DS_Store"
   - "**/Thumbs.db"

@@ -60,7 +60,9 @@ class ProcessInfo:
     create_time: Optional[float] = None
 
 
-def get_process_list(sort_by: str = "cpu", limit: Optional[int] = None) -> list[ProcessInfo]:
+def get_process_list(
+    sort_by: str = "cpu", limit: Optional[int] = None
+) -> list[ProcessInfo]:
     """Get list of running processes.
 
     Args:
@@ -72,18 +74,30 @@ def get_process_list(sort_by: str = "cpu", limit: Optional[int] = None) -> list[
     """
     processes = []
 
-    for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'status', 'username', 'create_time']):
+    for proc in psutil.process_iter(
+        [
+            "pid",
+            "name",
+            "cpu_percent",
+            "memory_percent",
+            "status",
+            "username",
+            "create_time",
+        ]
+    ):
         try:
             pinfo = proc.info
-            processes.append(ProcessInfo(
-                pid=pinfo['pid'],
-                name=pinfo['name'] or 'N/A',
-                cpu_percent=pinfo.get('cpu_percent', 0) or 0,
-                memory_percent=pinfo.get('memory_percent', 0) or 0,
-                status=pinfo.get('status', 'N/A') or 'N/A',
-                username=pinfo.get('username'),
-                create_time=pinfo.get('create_time'),
-            ))
+            processes.append(
+                ProcessInfo(
+                    pid=pinfo["pid"],
+                    name=pinfo["name"] or "N/A",
+                    cpu_percent=pinfo.get("cpu_percent", 0) or 0,
+                    memory_percent=pinfo.get("memory_percent", 0) or 0,
+                    status=pinfo.get("status", "N/A") or "N/A",
+                    username=pinfo.get("username"),
+                    create_time=pinfo.get("create_time"),
+                )
+            )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             continue
 
@@ -125,19 +139,23 @@ def get_network_interfaces() -> list[NetworkInterface]:
 
         addresses = []
         for addr in addr_list:
-            if addr.family.name == 'AF_INET':  # IPv4
-                addresses.append({
-                    'address': addr.address,
-                    'netmask': addr.netmask or 'N/A',
-                    'broadcast': addr.broadcast or 'N/A',
-                })
+            if addr.family.name == "AF_INET":  # IPv4
+                addresses.append(
+                    {
+                        "address": addr.address,
+                        "netmask": addr.netmask or "N/A",
+                        "broadcast": addr.broadcast or "N/A",
+                    }
+                )
 
         if addresses:  # Only include interfaces with IPv4 addresses
-            interfaces.append(NetworkInterface(
-                name=iface_name,
-                is_up=is_up,
-                addresses=addresses,
-            ))
+            interfaces.append(
+                NetworkInterface(
+                    name=iface_name,
+                    is_up=is_up,
+                    addresses=addresses,
+                )
+            )
 
     return interfaces
 

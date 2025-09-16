@@ -1,6 +1,5 @@
 """Tests for system module."""
 
-
 from sysforge.core.system import (
     get_network_interfaces,
     get_network_stats,
@@ -70,8 +69,8 @@ def test_get_network_interfaces() -> None:
         assert len(iface.addresses) > 0
 
         for addr in iface.addresses:
-            assert 'address' in addr
-            assert 'netmask' in addr
+            assert "address" in addr
+            assert "netmask" in addr
 
 
 def test_get_network_stats() -> None:

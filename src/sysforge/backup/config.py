@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class CompressionFormat(str, Enum):
     """Supported compression formats."""
+
     ZSTD = "zstd"
     LZ4 = "lz4"
     GZIP = "gzip"
@@ -20,6 +21,7 @@ class CompressionFormat(str, Enum):
 
 class ConflictResolution(str, Enum):
     """Conflict resolution strategies for restore operations."""
+
     PROMPT = "prompt"
     OVERWRITE = "overwrite"
     SKIP = "skip"
@@ -28,15 +30,20 @@ class ConflictResolution(str, Enum):
 
 class CompressionConfig(BaseModel):
     """Compression settings."""
+
     format: CompressionFormat = CompressionFormat.ZSTD
     level: int = Field(default=3, ge=1, le=22)
 
-    @field_validator('level')
+    @field_validator("level")
     @classmethod
     def validate_level(cls, v: int, info: Any) -> int:
         """Validate compression level based on format."""
         # Get format from other fields
-        format_type = info.data.get('format', CompressionFormat.ZSTD) if info.data else CompressionFormat.ZSTD
+        format_type = (
+            info.data.get("format", CompressionFormat.ZSTD)
+            if info.data
+            else CompressionFormat.ZSTD
+        )
 
         if format_type == CompressionFormat.ZSTD and not (1 <= v <= 22):
             raise ValueError("ZSTD compression level must be between 1 and 22")
@@ -50,6 +57,7 @@ class CompressionConfig(BaseModel):
 
 class TargetConfig(BaseModel):
     """Target configuration for backup operations."""
+
     base_path: str = "~"
     output_path: str = "~/.config/sysforge/backups/backup-{timestamp}.tar.zst"
 
@@ -70,21 +78,29 @@ class TargetConfig(BaseModel):
 
 class GitConfig(BaseModel):
     """Git repository handling configuration."""
+
     include_repos: bool = True
-    respect_gitignore: bool = True  # Respect .gitignore by default for sensible backup sizes
-    include_git_dir: bool = True  # Always include .git directory for complete restoration
+    respect_gitignore: bool = (
+        True  # Respect .gitignore by default for sensible backup sizes
+    )
+    include_git_dir: bool = (
+        True  # Always include .git directory for complete restoration
+    )
     backup_complete_git: bool = True  # New field to ensure complete git backup
-    gitignore_override_patterns: List[str] = Field(default_factory=lambda: [
-        "**/.env*",      # Environment files
-        "**/*.env",      # Alternative env format
-        "**/.env.*",     # Environment files with suffixes (.env.local, .env.prod, etc.)
-        "**/secrets.*",  # Secret files
-        "**/config.*",   # Config files that might be important
-    ])
+    gitignore_override_patterns: List[str] = Field(
+        default_factory=lambda: [
+            "**/.env*",  # Environment files
+            "**/*.env",  # Alternative env format
+            "**/.env.*",  # Environment files with suffixes (.env.local, .env.prod, etc.)
+            "**/secrets.*",  # Secret files
+            "**/config.*",  # Config files that might be important
+        ]
+    )
 
 
 class RestoreConfig(BaseModel):
     """Restore operation configuration."""
+
     conflict_resolution: ConflictResolution = ConflictResolution.PROMPT
     preserve_permissions: bool = True
     create_backup_on_conflict: bool = True
@@ -95,142 +111,240 @@ class RestoreConfig(BaseModel):
         if timestamp is None:
             timestamp = datetime.now()
 
-        return self.backup_suffix.format(
-            timestamp=timestamp.strftime("%Y%m%d_%H%M%S")
-        )
+        return self.backup_suffix.format(timestamp=timestamp.strftime("%Y%m%d_%H%M%S"))
 
 
 class BackupConfig(BaseModel):
     """Complete backup configuration."""
+
     compression: CompressionConfig = CompressionConfig()
     target: TargetConfig = TargetConfig()
     git: GitConfig = GitConfig()
     restore: RestoreConfig = RestoreConfig()
 
     # Whitelist of dot directories at root of home directory that should be included
-    dot_directory_whitelist: List[str] = Field(default_factory=lambda: [
-        ".ssh",           # SSH keys and config
-        ".gnupg",         # GPG keys
-        ".aws",           # AWS credentials (will be sub-filtered)
-        ".kube",          # Kubernetes config (will be sub-filtered)
-        ".config",        # User configurations (will be sub-filtered)
-        ".emacs.d",       # Emacs configuration
-    ])
-    
-    include_patterns: List[str] = Field(default_factory=lambda: [
-        # Programming and code files
-        "**/*.py", "**/*.js", "**/*.ts", "**/*.tsx", "**/*.jsx",
-        "**/*.java", "**/*.cpp", "**/*.c", "**/*.h", "**/*.rs", "**/*.go",
-        "**/*.md", "**/*.rst", "**/*.txt",
-        "**/*.yaml", "**/*.yml", "**/*.json", "**/*.toml", "**/*.ini", "**/*.cfg",
-        "**/src/**", "**/docs/**", "**/doc/**", "**/tests/**", "**/test/**",
-        "**/*.sql", "**/*.sh", "**/*.bash", "**/*.zsh",
-        "**/Dockerfile*", "**/docker-compose*", "**/Makefile*", "**/.env*",
-        # Image files
-        "**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.bmp", "**/*.svg", "**/*.webp",
-        "**/*.ico", "**/*.tiff", "**/*.tif",
-        # Document files
-        "**/*.pdf", "**/*.doc", "**/*.docx", "**/*.odt", "**/*.rtf",
-        "**/*.xls", "**/*.xlsx", "**/*.ods", "**/*.csv",
-        "**/*.ppt", "**/*.pptx", "**/*.odp",
-        # Important directories that may contain user files
-        "**/Pictures/**", "**/Screenshots/**", "**/Documents/**", "**/Desktop/**",
-        # Important configuration files (not directories)
-        "**/.bashrc", "**/.zshrc", "**/.profile", "**/.vimrc", "**/.gitconfig",
-        "**/.gitignore", "**/.dockerignore",
-        "**/.bash_profile", "**/.bash_aliases", "**/.bash_history",
-        "**/.zsh_history", "**/.zprofile",
-        "**/.tmux.conf", "**/.screenrc",
-        "**/.inputrc", "**/.curlrc", "**/.wgetrc",
-        "**/.selected_editor", "**/.lesshst", "**/.emacs",
-        # Sub-filtered content from whitelisted dot directories
-        "**/.config/**/*.conf", "**/.config/**/*.ini", "**/.config/**/*.yaml", 
-        "**/.config/**/*.yml", "**/.config/**/*.json", "**/.config/**/*.toml",
-        "**/.config/**/*.desktop", "**/.config/**/settings", "**/.config/**/config",
-        "**/.config/nvim/**", "**/.config/git/**", "**/.config/gh/**", 
-        "**/.config/htop/**", "**/.config/fish/**",
-        "**/.ssh/**", "**/.gnupg/**", 
-        "**/.aws/config", "**/.aws/credentials",  # Only config files, not cache
-        "**/.kube/config",  # Only the config, not cache directories
-        "**/.emacs.d/init.el", "**/.emacs.d/config/**"  # Emacs configs, not packages
-    ])
+    dot_directory_whitelist: List[str] = Field(
+        default_factory=lambda: [
+            ".ssh",  # SSH keys and config
+            ".gnupg",  # GPG keys
+            ".aws",  # AWS credentials (will be sub-filtered)
+            ".kube",  # Kubernetes config (will be sub-filtered)
+            ".config",  # User configurations (will be sub-filtered)
+            ".emacs.d",  # Emacs configuration
+        ]
+    )
 
-    exclude_patterns: List[str] = Field(default_factory=lambda: [
-        # Build artifacts and caches (applied outside git repos only)
-        "**/node_modules/**", "**/__pycache__/**", "**/*.pyc", "**/*.pyo",
-        "**/.venv/**", "**/venv/**", "**/target/**", "**/build/**", "**/dist/**",
-        "**/.pytest_cache/**", "**/.mypy_cache/**", "**/.ruff_cache/**",
-        "**/*.egg-info/**", "**/coverage.xml", "**/.coverage", "**/.tox/**", "**/htmlcov/**",
-        # IDE and editor files
-        "**/.vscode/**", "**/.idea/**", "**/*.swp", "**/*.swo", "**/*~",
-        # OS files
-        "**/.DS_Store", "**/Thumbs.db",
-        # Temporary files and directories
-        "**/*.tmp", "**/*.temp", "**/temp/**"
-    ])
+    include_patterns: List[str] = Field(
+        default_factory=lambda: [
+            # Programming and code files
+            "**/*.py",
+            "**/*.js",
+            "**/*.ts",
+            "**/*.tsx",
+            "**/*.jsx",
+            "**/*.java",
+            "**/*.cpp",
+            "**/*.c",
+            "**/*.h",
+            "**/*.rs",
+            "**/*.go",
+            "**/*.md",
+            "**/*.rst",
+            "**/*.txt",
+            "**/*.yaml",
+            "**/*.yml",
+            "**/*.json",
+            "**/*.toml",
+            "**/*.ini",
+            "**/*.cfg",
+            "**/src/**",
+            "**/docs/**",
+            "**/doc/**",
+            "**/tests/**",
+            "**/test/**",
+            "**/*.sql",
+            "**/*.sh",
+            "**/*.bash",
+            "**/*.zsh",
+            "**/Dockerfile*",
+            "**/docker-compose*",
+            "**/Makefile*",
+            "**/.env*",
+            # Image files
+            "**/*.png",
+            "**/*.jpg",
+            "**/*.jpeg",
+            "**/*.gif",
+            "**/*.bmp",
+            "**/*.svg",
+            "**/*.webp",
+            "**/*.ico",
+            "**/*.tiff",
+            "**/*.tif",
+            # Document files
+            "**/*.pdf",
+            "**/*.doc",
+            "**/*.docx",
+            "**/*.odt",
+            "**/*.rtf",
+            "**/*.xls",
+            "**/*.xlsx",
+            "**/*.ods",
+            "**/*.csv",
+            "**/*.ppt",
+            "**/*.pptx",
+            "**/*.odp",
+            # Important directories that may contain user files
+            "**/Pictures/**",
+            "**/Screenshots/**",
+            "**/Documents/**",
+            "**/Desktop/**",
+            # Important configuration files (not directories)
+            "**/.bashrc",
+            "**/.zshrc",
+            "**/.profile",
+            "**/.vimrc",
+            "**/.gitconfig",
+            "**/.gitignore",
+            "**/.dockerignore",
+            "**/.bash_profile",
+            "**/.bash_aliases",
+            "**/.bash_history",
+            "**/.zsh_history",
+            "**/.zprofile",
+            "**/.tmux.conf",
+            "**/.screenrc",
+            "**/.inputrc",
+            "**/.curlrc",
+            "**/.wgetrc",
+            "**/.selected_editor",
+            "**/.lesshst",
+            "**/.emacs",
+            # Sub-filtered content from whitelisted dot directories
+            "**/.config/**/*.conf",
+            "**/.config/**/*.ini",
+            "**/.config/**/*.yaml",
+            "**/.config/**/*.yml",
+            "**/.config/**/*.json",
+            "**/.config/**/*.toml",
+            "**/.config/**/*.desktop",
+            "**/.config/**/settings",
+            "**/.config/**/config",
+            "**/.config/nvim/**",
+            "**/.config/git/**",
+            "**/.config/gh/**",
+            "**/.config/htop/**",
+            "**/.config/fish/**",
+            "**/.ssh/**",
+            "**/.gnupg/**",
+            "**/.aws/config",
+            "**/.aws/credentials",  # Only config files, not cache
+            "**/.kube/config",  # Only the config, not cache directories
+            "**/.emacs.d/init.el",
+            "**/.emacs.d/config/**",  # Emacs configs, not packages
+        ]
+    )
 
-    always_exclude: List[str] = Field(default_factory=lambda: [
-        # OS files
-        "**/.DS_Store", "**/Thumbs.db", "**/*.tmp", "**/*.temp",
-        "**/*.log", "**/core", "**/core.*",
-        
-        # Package managers and stores
-        "**/snap/**",  # Snap packages
-        "**/flatpak/**",  # Flatpak
-        
-        # Game and app directories
-        "**/Games/**",  # Games directory
-        
-        # Virtual machines and containers
-        "**/VirtualBox VMs/**",
-        "**/vmware/**",
-        
-        # Database files
-        "**/*.db",
-        "**/*.sqlite",
-        "**/*.sqlite3",
-        "**/*.db-wal",
-        "**/*.db-shm",
-        
-        # Temporary and build directories
-        # Exclude common tmp directories but not system /tmp for tests
-        "**/app-tmp/**", "**/application-tmp/**",
-        "**/temp/**",
-        "**/build/**",
-        "**/dist/**",
-        "**/target/**",
-        "**/__pycache__/**",
-        "**/node_modules/**",
-        
-        # Browser and application cache exclusions for performance
-        "**/.config/*/Cache/**", "**/.config/*/CacheStorage/**", "**/.config/*/Code Cache/**",
-        "**/.config/BraveSoftware/**", "**/.config/google-chrome/**/Cache/**",
-        "**/.config/chromium/**/Cache/**", "**/.config/Code/Cache/**",
-        
-        # Large binary files that shouldn't be backed up
-        "**/*.iso",
-        "**/*.img",
-        "**/*.vmdk",
-        "**/*.vdi",
-        "**/*.qcow2",
-        
-        # Trash and temporary files
-        "**/lost+found/**",
-        
-        # System directories that shouldn't be backed up
-        "**/proc/**",
-        "**/sys/**",
-        "**/dev/**",
-        "**/run/**",
-        "**/mnt/**",
-        "**/media/**",
-        
-        # Additional caches (keep specific cache patterns that don't start with dots)
-        "**/CachedData/**",
-        "**/ShaderCache/**",
-        "**/*_cache/**",
-        "**/*.cache/**"
-    ])
+    exclude_patterns: List[str] = Field(
+        default_factory=lambda: [
+            # Build artifacts and caches (applied outside git repos only)
+            "**/node_modules/**",
+            "**/__pycache__/**",
+            "**/*.pyc",
+            "**/*.pyo",
+            "**/.venv/**",
+            "**/venv/**",
+            "**/target/**",
+            "**/build/**",
+            "**/dist/**",
+            "**/.pytest_cache/**",
+            "**/.mypy_cache/**",
+            "**/.ruff_cache/**",
+            "**/*.egg-info/**",
+            "**/coverage.xml",
+            "**/.coverage",
+            "**/.tox/**",
+            "**/htmlcov/**",
+            # IDE and editor files
+            "**/.vscode/**",
+            "**/.idea/**",
+            "**/*.swp",
+            "**/*.swo",
+            "**/*~",
+            # OS files
+            "**/.DS_Store",
+            "**/Thumbs.db",
+            # Temporary files and directories
+            "**/*.tmp",
+            "**/*.temp",
+            "**/temp/**",
+        ]
+    )
+
+    always_exclude: List[str] = Field(
+        default_factory=lambda: [
+            # OS files
+            "**/.DS_Store",
+            "**/Thumbs.db",
+            "**/*.tmp",
+            "**/*.temp",
+            "**/*.log",
+            "**/core",
+            "**/core.*",
+            # Package managers and stores
+            "**/snap/**",  # Snap packages
+            "**/flatpak/**",  # Flatpak
+            # Game and app directories
+            "**/Games/**",  # Games directory
+            # Virtual machines and containers
+            "**/VirtualBox VMs/**",
+            "**/vmware/**",
+            # Database files
+            "**/*.db",
+            "**/*.sqlite",
+            "**/*.sqlite3",
+            "**/*.db-wal",
+            "**/*.db-shm",
+            # Temporary and build directories
+            # Exclude common tmp directories but not system /tmp for tests
+            "**/app-tmp/**",
+            "**/application-tmp/**",
+            "**/temp/**",
+            "**/build/**",
+            "**/dist/**",
+            "**/target/**",
+            "**/__pycache__/**",
+            "**/node_modules/**",
+            # Browser and application cache exclusions for performance
+            "**/.config/*/Cache/**",
+            "**/.config/*/CacheStorage/**",
+            "**/.config/*/Code Cache/**",
+            "**/.config/BraveSoftware/**",
+            "**/.config/google-chrome/**/Cache/**",
+            "**/.config/chromium/**/Cache/**",
+            "**/.config/Code/Cache/**",
+            # Large binary files that shouldn't be backed up
+            "**/*.iso",
+            "**/*.img",
+            "**/*.vmdk",
+            "**/*.vdi",
+            "**/*.qcow2",
+            # Trash and temporary files
+            "**/lost+found/**",
+            # System directories that shouldn't be backed up
+            "**/proc/**",
+            "**/sys/**",
+            "**/dev/**",
+            "**/run/**",
+            "**/mnt/**",
+            "**/media/**",
+            # Additional caches (keep specific cache patterns that don't start with dots)
+            "**/CachedData/**",
+            "**/ShaderCache/**",
+            "**/*_cache/**",
+            "**/*.cache/**",
+        ]
+    )
 
     max_file_size: str = "100MB"
 
@@ -242,11 +356,11 @@ class BackupConfig(BaseModel):
         """Convert max_file_size string to bytes."""
         size_str = self.max_file_size.upper()
 
-        if size_str.endswith('KB'):
+        if size_str.endswith("KB"):
             return int(size_str[:-2]) * 1024
-        elif size_str.endswith('MB'):
+        elif size_str.endswith("MB"):
             return int(size_str[:-2]) * 1024 * 1024
-        elif size_str.endswith('GB'):
+        elif size_str.endswith("GB"):
             return int(size_str[:-2]) * 1024 * 1024 * 1024
         else:
             # Assume bytes
@@ -328,7 +442,11 @@ class ConfigManager:
     def _deep_merge(cls, target: Dict[str, Any], source: Dict[str, Any]) -> None:
         """Recursively merge source into target."""
         for key, value in source.items():
-            if key in target and isinstance(target[key], dict) and isinstance(value, dict):
+            if (
+                key in target
+                and isinstance(target[key], dict)
+                and isinstance(value, dict)
+            ):
                 cls._deep_merge(target[key], value)
             else:
                 target[key] = value
@@ -338,7 +456,7 @@ class ConfigManager:
         cls,
         profile: Optional[str] = None,
         config_file: Optional[Path] = None,
-        overrides: Optional[Dict[str, Any]] = None
+        overrides: Optional[Dict[str, Any]] = None,
     ) -> BackupConfig:
         """Load the effective configuration with proper hierarchy."""
         cls.ensure_config_dirs()
@@ -361,11 +479,7 @@ class ConfigManager:
 
         # Merge configs: default -> user -> profile -> file -> overrides
         merged_config = cls.merge_configs(
-            default_config,
-            user_config,
-            profile_config,
-            file_config,
-            overrides
+            default_config, user_config, profile_config, file_config, overrides
         )
 
         return BackupConfig(**merged_config)
@@ -375,7 +489,7 @@ class ConfigManager:
         """Save user configuration to file."""
         cls.ensure_config_dirs()
 
-        with open(cls.USER_CONFIG_FILE, 'w') as f:
+        with open(cls.USER_CONFIG_FILE, "w") as f:
             yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
     @classmethod
@@ -384,7 +498,7 @@ class ConfigManager:
         cls.ensure_config_dirs()
 
         profile_file = cls.PROFILES_DIR / f"{profile_name}.yaml"
-        with open(profile_file, 'w') as f:
+        with open(profile_file, "w") as f:
             yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
     @classmethod
