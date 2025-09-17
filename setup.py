@@ -33,7 +33,9 @@ def get_ext_modules():
         # ])
         return mypycify(
             [
-                "src/sysforge/__main__.py",
+                "src/sysforge/cli.py",
+                "src/sysforge/core/system.py",
+                "src/sysforge/utils/formatting.py",
             ]
         )
 

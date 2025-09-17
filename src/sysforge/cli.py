@@ -87,12 +87,16 @@ def status() -> None:
 @app.command()
 def processes(
     top: int = typer.Option(10, "--top", "-t", help="Number of top processes to show"),
-    sort_by: str = typer.Option("cpu", "--sort", "-s", help="Sort by: cpu, memory, name"),
+    sort_by: str = typer.Option(
+        "cpu", "--sort", "-s", help="Sort by: cpu, memory, name"
+    ),
 ) -> None:
     """List running processes."""
     import psutil
 
-    console.print(f"\n[bold cyan]Top {top} Processes (sorted by {sort_by})[/bold cyan]\n")
+    console.print(
+        f"\n[bold cyan]Top {top} Processes (sorted by {sort_by})[/bold cyan]\n"
+    )
 
     table = Table(show_header=True)
     table.add_column("PID", style="cyan")
@@ -102,7 +106,9 @@ def processes(
     table.add_column("Status", style="blue")
 
     processes_list = []
-    for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'status']):
+    for proc in psutil.process_iter(
+        ["pid", "name", "cpu_percent", "memory_percent", "status"]
+    ):
         try:
             pinfo = proc.info
             processes_list.append(pinfo)
@@ -111,20 +117,20 @@ def processes(
 
     # Sort processes
     if sort_by == "cpu":
-        processes_list.sort(key=lambda x: x.get('cpu_percent', 0) or 0, reverse=True)
+        processes_list.sort(key=lambda x: x.get("cpu_percent", 0) or 0, reverse=True)
     elif sort_by == "memory":
-        processes_list.sort(key=lambda x: x.get('memory_percent', 0) or 0, reverse=True)
+        processes_list.sort(key=lambda x: x.get("memory_percent", 0) or 0, reverse=True)
     elif sort_by == "name":
-        processes_list.sort(key=lambda x: x.get('name', '') or '')
+        processes_list.sort(key=lambda x: x.get("name", "") or "")
 
     # Display top N processes
     for proc_info in processes_list[:top]:
         table.add_row(
-            str(proc_info.get('pid', 'N/A')),
-            proc_info.get('name', 'N/A') or 'N/A',
+            str(proc_info.get("pid", "N/A")),
+            proc_info.get("name", "N/A") or "N/A",
             f"{proc_info.get('cpu_percent', 0) or 0:.1f}",
             f"{proc_info.get('memory_percent', 0) or 0:.1f}",
-            proc_info.get('status', 'N/A') or 'N/A',
+            proc_info.get("status", "N/A") or "N/A",
         )
 
     console.print(table)
@@ -151,7 +157,7 @@ def network() -> None:
         status = "[green]UP[/green]" if is_up else "[red]DOWN[/red]"
 
         for addr in addr_list:
-            if addr.family.name == 'AF_INET':  # IPv4
+            if addr.family.name == "AF_INET":  # IPv4
                 table.add_row(
                     iface,
                     status,
@@ -165,7 +171,9 @@ def network() -> None:
     net_io = psutil.net_io_counters()
     console.print("\n[bold cyan]Network I/O Statistics[/bold cyan]")
     console.print(f"Bytes Sent: [green]{net_io.bytes_sent / (1024**2):.2f} MB[/green]")
-    console.print(f"Bytes Received: [green]{net_io.bytes_recv / (1024**2):.2f} MB[/green]")
+    console.print(
+        f"Bytes Received: [green]{net_io.bytes_recv / (1024**2):.2f} MB[/green]"
+    )
     console.print(f"Packets Sent: [green]{net_io.packets_sent:,}[/green]")
     console.print(f"Packets Received: [green]{net_io.packets_recv:,}[/green]")
 

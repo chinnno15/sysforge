@@ -8,7 +8,7 @@ target:
 
 compression:
   format: "zstd"
-  level: 9  # Maximum compression for personal files
+  level: 9 # Maximum compression for personal files
 
 git:
   include_repos: true
@@ -37,7 +37,7 @@ include_patterns:
   - "**/*.ini"
   - "**/*.cfg"
   - "**/*.conf"
-  
+
   # Images
   - "**/*.jpg"
   - "**/*.jpeg"
@@ -48,14 +48,14 @@ include_patterns:
   - "**/*.webp"
   - "**/*.svg"
   - "**/*.ico"
-  
+
   # Audio and video (smaller files only due to size limit)
   - "**/*.mp3"
   - "**/*.wav"
   - "**/*.flac"
   - "**/*.ogg"
   - "**/*.m4a"
-  
+
   # Archives and backups
   - "**/*.zip"
   - "**/*.tar"
@@ -63,7 +63,7 @@ include_patterns:
   - "**/*.tar.bz2"
   - "**/*.7z"
   - "**/*.rar"
-  
+
   # Spreadsheets and presentations
   - "**/*.xls"
   - "**/*.xlsx"
@@ -72,14 +72,14 @@ include_patterns:
   - "**/*.ppt"
   - "**/*.pptx"
   - "**/*.odp"
-  
+
   # Code and scripts (personal projects)
   - "**/*.py"
   - "**/*.js"
   - "**/*.sh"
   - "**/*.bash"
   - "**/*.zsh"
-  
+
   # Configuration files
   - "**/.*rc"
   - "**/.*profile"
@@ -96,12 +96,12 @@ exclude_patterns:
   - "**/cache/**"
   - "**/.thumbnails/**"
   - "**/.Trash*/**"
-  
+
   # Browser caches
   - "**/Google/Chrome/Default/Cache/**"
   - "**/Mozilla/Firefox/*/cache*/**"
   - "**/Safari/Cache/**"
-  
+
   # Application caches
   - "**/.vscode/**"
   - "**/.idea/**"

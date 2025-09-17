@@ -19,7 +19,10 @@ def test_status_command() -> None:
     """Test status command."""
     result = runner.invoke(app, ["status"])
     assert result.exit_code == 0
-    assert "System Status Overview" in result.stdout or "System Information" in result.stdout
+    assert (
+        "System Status Overview" in result.stdout
+        or "System Information" in result.stdout
+    )
 
 
 def test_processes_command() -> None:

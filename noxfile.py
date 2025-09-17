@@ -150,6 +150,8 @@ def mypy(session: nox.Session) -> None:
 
     session.install("mypy")
     session.install("pytest")
+    session.install("types-psutil")
+    session.install("types-pyyaml")
     session.install("-e", ".")
     session.run("mypy", *args)
     if not session.posargs:

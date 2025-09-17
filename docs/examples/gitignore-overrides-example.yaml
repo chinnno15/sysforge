@@ -4,24 +4,24 @@
 git:
   # Whether to respect .gitignore files in repositories
   respect_gitignore: true
-  
+
   # Patterns that override .gitignore - these files will be backed up even if gitignored
   gitignore_override_patterns:
     # Environment files (default - important for deployments)
-    - "**/.env*"           # .env, .env.local, .env.production, etc.
-    - "**/.env.*"          # .env.development, .env.staging, etc.
-    
+    - "**/.env*" # .env, .env.local, .env.production, etc.
+    - "**/.env.*" # .env.development, .env.staging, etc.
+
     # Configuration files that might be gitignored but important for backups
-    - "**/secrets.*"       # secrets.json, secrets.yaml, etc.
-    - "**/config.*"        # config.json, config.yaml, etc. 
-    
+    - "**/secrets.*" # secrets.json, secrets.yaml, etc.
+    - "**/config.*" # config.json, config.yaml, etc.
+
     # Additional patterns you might want to add:
-    - "**/keys/**"         # SSH keys, API keys directory
-    - "**/*.pem"           # Certificate files
-    - "**/*.key"           # Private key files
+    - "**/keys/**" # SSH keys, API keys directory
+    - "**/*.pem" # Certificate files
+    - "**/*.key" # Private key files
     - "**/database.sqlite" # Local database files
-    - "**/.vscode/settings.json"  # Personal IDE settings
-    
+    - "**/.vscode/settings.json" # Personal IDE settings
+
     # Specific important files that might be gitignored
     - "**/important-notes.txt"
     - "**/local-config.ini"
@@ -40,6 +40,6 @@ profiles:
     # Only include override patterns, exclude everything else
     include_patterns:
       - "**/.env*"
-      - "**/secrets.*" 
+      - "**/secrets.*"
       - "**/*.pem"
       - "**/*.key"

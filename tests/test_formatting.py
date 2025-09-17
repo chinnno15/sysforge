@@ -1,6 +1,5 @@
 """Tests for formatting utilities."""
 
-
 from sysforge.utils.formatting import (
     create_table,
     format_bytes,
@@ -47,7 +46,6 @@ def test_create_table() -> None:
     assert table.show_header is True
 
     table_with_columns = create_table(
-        title="Test",
-        columns=[("Column1", "cyan"), ("Column2", "green")]
+        title="Test", columns=[("Column1", "cyan"), ("Column2", "green")]
     )
     assert len(table_with_columns.columns) == 2

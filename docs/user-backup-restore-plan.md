@@ -1,16 +1,19 @@
 # User Backup & Restore Development Plan
 
 ## Overview
+
 Develop a comprehensive user directory backup and restore system with git-aware functionality, flexible configuration management, and intuitive CLI interface.
 
 ## Phase 1: Technical Foundation
 
 ### Compression Format Choice
+
 - **Primary: ZSTD** (fastest with excellent compression ratio)
-- **Alternative: LZ4** (fastest compression, lower ratio) 
+- **Alternative: LZ4** (fastest compression, lower ratio)
 - **Fallback: gzip** (universal compatibility)
 
 ### Required Libraries
+
 - `python-zstandard` - ZSTD compression support
 - `GitPython` - Git repository detection and operations
 - `click-completion` or `argcomplete` - Tab completion support
@@ -19,6 +22,7 @@ Develop a comprehensive user directory backup and restore system with git-aware 
 ## Phase 2: Configuration Management System
 
 ### Configuration Hierarchy
+
 ```
 1. Default configuration (embedded in application)
 2. User configuration (~/.config/sysforge/user-backup.yaml)
@@ -27,6 +31,7 @@ Develop a comprehensive user directory backup and restore system with git-aware 
 ```
 
 ### XDG Base Directory Structure
+
 ```
 ~/.config/sysforge/
 ├── user-backup.yaml      # User overrides
@@ -39,21 +44,22 @@ Develop a comprehensive user directory backup and restore system with git-aware 
 ```
 
 ### Default Configuration (Embedded)
+
 ```yaml
 # Default configuration - embedded in application
 compression:
   format: "zstd"
   level: 3
-  
+
 target:
   base_path: "~"
   output_path: "~/.config/sysforge/backups/backup-{timestamp}.tar.zst"
-  
+
 git:
   include_repos: true
   respect_gitignore: false
   include_git_dir: true
-  
+
 include_patterns:
   - "**/*.py"
   - "**/*.js"
@@ -97,9 +103,9 @@ exclude_patterns:
   - "**/*.pyo"
   - "**/.venv/**"
   - "**/venv/**"
-  - "**/target/**"           # Rust builds
-  - "**/build/**"            # General builds
-  - "**/dist/**"             # Distribution files
+  - "**/target/**" # Rust builds
+  - "**/build/**" # General builds
+  - "**/dist/**" # Distribution files
   - "**/.pytest_cache/**"
   - "**/.mypy_cache/**"
   - "**/.ruff_cache/**"
@@ -108,18 +114,18 @@ exclude_patterns:
   - "**/.coverage"
   - "**/.tox/**"
   - "**/htmlcov/**"
-  
+
   # IDE and editor files
   - "**/.vscode/**"
   - "**/.idea/**"
   - "**/*.swp"
   - "**/*.swo"
   - "**/*~"
-  
+
   # OS files
   - "**/.DS_Store"
   - "**/Thumbs.db"
-  
+
   # Temporary files
   - "**/*.tmp"
   - "**/*.temp"
@@ -145,6 +151,7 @@ restore:
 ```
 
 ### User Configuration Override Example
+
 ```yaml
 # ~/.config/sysforge/user-backup.yaml
 target:
@@ -152,7 +159,7 @@ target:
   output_path: "~/Backups/work-{timestamp}.tar.zst"
 
 compression:
-  level: 6  # Higher compression
+  level: 6 # Higher compression
 
 include_patterns:
   # Add custom patterns
@@ -168,6 +175,7 @@ exclude_patterns:
 ## Phase 3: CLI Interface Design
 
 ### Main Commands
+
 ```bash
 # Backup command
 sysforge user-backup [OPTIONS] [TARGET_PATH]
@@ -175,7 +183,7 @@ sysforge user-backup [OPTIONS] [TARGET_PATH]
 Options:
   --config, -c PATH       Custom configuration file
   --profile, -p NAME      Use named profile from ~/.config/sysforge/profiles/
-  --output, -o PATH       Override output path  
+  --output, -o PATH       Override output path
   --format TEXT           Override compression format (zstd|lz4|gzip)
   --level INTEGER         Override compression level
   --dry-run              Show what would be backed up
@@ -186,7 +194,7 @@ Options:
   --include PATTERN      Add include pattern
   --exclude PATTERN      Add exclude pattern
 
-# Restore command  
+# Restore command
 sysforge restore [OPTIONS] [BACKUP_FILE]
 
 Options:
@@ -211,6 +219,7 @@ Subcommands:
 ```
 
 ### Tab Completion Features
+
 - **Backup files**: Complete backup file paths from default backup directory
 - **Configuration profiles**: Complete profile names from ~/.config/sysforge/profiles/
 - **Path completion**: Complete file and directory paths
@@ -221,12 +230,14 @@ Subcommands:
 ## Phase 4: Git-Aware Logic
 
 ### Git Repository Detection Algorithm
+
 1. **Scan for .git directories** - Walk directory tree identifying git repositories
 2. **Handle nested repositories** - Support git repositories within other git repositories
 3. **Respect git boundaries** - Each git repository is treated as a unit
 4. **Include all git content** - Ignore standard exclude patterns within git repositories
 
 ### File Processing Priority
+
 ```
 For each file/directory:
 1. Check if path matches always_exclude patterns → Skip
@@ -238,7 +249,8 @@ For each file/directory:
 ```
 
 ### Git Repository Handling
-- **Include .git directory** - Preserve complete git history and metadata  
+
+- **Include .git directory** - Preserve complete git history and metadata
 - **Ignore .gitignore rules** - Backup all tracked and untracked files
 - **Handle git submodules** - Detect and include submodule contents
 - **Preserve git attributes** - Maintain git-specific file attributes
@@ -246,6 +258,7 @@ For each file/directory:
 ## Phase 5: Restore Functionality
 
 ### Restore Features
+
 - **Archive inspection** - List contents without extracting
 - **Selective restore** - Restore specific files/directories using patterns
 - **Conflict detection** - Check for existing files at target location
@@ -259,25 +272,27 @@ For each file/directory:
 - **Verification** - Verify restored files against archive checksums
 
 ### Conflict Resolution Interface
+
 ```
 Conflict detected: /home/user/project/src/main.py
   Existing: 2024-01-15 14:30:00 (1.2KB)
   Archive:  2024-01-14 16:45:00 (1.1KB)
-  
+
 Choose action:
   [o] Overwrite - Replace existing file
-  [s] Skip - Keep existing file  
+  [s] Skip - Keep existing file
   [b] Backup - Move existing to .backup and restore
   [d] Diff - Show differences between files
   [a] All - Apply choice to all remaining conflicts
   [q] Quit - Stop restoration
-  
+
 Choice [o/s/b/d/a/q]:
 ```
 
 ## Phase 6: Testing Strategy
 
 ### Unit Tests Structure
+
 ```
 tests/
 ├── unit/
@@ -308,6 +323,7 @@ tests/
 ```
 
 ### Integration Tests
+
 ```
 tests/
 ├── integration/
@@ -318,7 +334,7 @@ tests/
 │   │   │   │   ├── src/                  # Source code
 │   │   │   │   ├── node_modules/         # Should be included (git repo)
 │   │   │   │   ├── __pycache__/          # Should be included (git repo)
-│   │   │   │   ├── .gitignore           
+│   │   │   │   ├── .gitignore
 │   │   │   │   └── large_file.dat        # Test size limits
 │   │   │   ├── non_git_project/          # Regular directory
 │   │   │   │   ├── src/                  # Should be included
@@ -346,14 +362,16 @@ tests/
 │   ├── test_end_to_end_backup.py         # Full backup workflow
 │   ├── test_end_to_end_restore.py        # Full restore workflow
 │   ├── test_config_hierarchy.py          # Config loading integration
-│   ├── test_git_workflows.py             # Git-specific scenarios  
+│   ├── test_git_workflows.py             # Git-specific scenarios
 │   ├── test_cli_integration.py           # CLI command integration
 │   ├── test_performance.py               # Performance benchmarks
 │   └── test_cross_platform.py            # Cross-platform compatibility
 ```
 
 ### Test Categories
+
 1. **Configuration Tests**
+
    - Default config loading
    - User config override merging
    - Command-line argument precedence
@@ -361,6 +379,7 @@ tests/
    - Config validation and error handling
 
 2. **Git Integration Tests**
+
    - Git repository detection accuracy
    - Nested repository handling
    - Git-aware file inclusion
@@ -368,6 +387,7 @@ tests/
    - .git directory preservation
 
 3. **File Filtering Tests**
+
    - Include pattern matching
    - Exclude pattern matching
    - Git vs non-git filtering differences
@@ -375,6 +395,7 @@ tests/
    - File size limit enforcement
 
 4. **Backup Workflow Tests**
+
    - End-to-end backup creation
    - Archive integrity verification
    - Progress reporting accuracy
@@ -382,6 +403,7 @@ tests/
    - Different compression formats
 
 5. **Restore Workflow Tests**
+
    - End-to-end restore process
    - Conflict detection accuracy
    - All conflict resolution strategies
@@ -398,36 +420,42 @@ tests/
 ## Phase 7: Implementation Phases
 
 ### Phase 7.1: Core Infrastructure (Week 1)
+
 1. **Configuration system** - Default config, user config loading, hierarchy
 2. **XDG directory management** - Config directory creation and management
 3. **Basic CLI structure** - Command parsing, help system
 4. **Configuration printing** - `--print-config` functionality
 
 ### Phase 7.2: Git-Aware Backup (Week 1-2)
+
 1. **Git repository detection** - Find and categorize git repositories
 2. **File filtering logic** - Implement git-aware vs standard filtering
 3. **Core compression** - Archive creation with chosen format
 4. **Progress reporting** - Real-time backup progress
 
-### Phase 7.3: Restore Functionality (Week 2)  
+### Phase 7.3: Restore Functionality (Week 2)
+
 1. **Archive inspection** - Read and list archive contents
 2. **Conflict detection** - Compare archive vs existing files
 3. **Conflict resolution** - Implement all resolution strategies
 4. **Metadata restoration** - Preserve permissions and timestamps
 
 ### Phase 7.4: Advanced CLI Features (Week 2-3)
+
 1. **Tab completion** - Complete file paths, profiles, options
 2. **Profile system** - Named backup profiles
 3. **Selective operations** - Pattern-based backup/restore
 4. **Dry-run functionality** - Preview operations without executing
 
 ### Phase 7.5: Testing & Polish (Week 3)
+
 1. **Comprehensive test suite** - Unit and integration tests
-2. **Performance optimization** - Profile and optimize hot paths  
+2. **Performance optimization** - Profile and optimize hot paths
 3. **Error handling** - Graceful failure and user feedback
 4. **Documentation** - User guide and API documentation
 
 ### Phase 7.6: Advanced Features (Future)
+
 1. **Incremental backups** - Only backup changed files
 2. **Archive encryption** - Password-protected backups
 3. **Remote storage integration** - Cloud storage backends
@@ -437,6 +465,7 @@ tests/
 ## Success Criteria
 
 ### Functional Requirements
+
 - ✅ Create compressed backups with configurable compression
 - ✅ Include entire git repositories while filtering non-git directories
 - ✅ Restore backups with conflict resolution
@@ -445,13 +474,15 @@ tests/
 - ✅ Progress reporting for long operations
 
 ### Technical Requirements
+
 - ✅ Support ZSTD, LZ4, and gzip compression formats
 - ✅ Handle large directories (>10GB) efficiently
 - ✅ Cross-platform compatibility (Linux, macOS, Windows)
 - ✅ Comprehensive error handling and recovery
 - ✅ Extensible architecture for future enhancements
 
-### User Experience Requirements  
+### User Experience Requirements
+
 - ✅ Intuitive CLI interface with helpful defaults
 - ✅ Clear progress indication and logging
 - ✅ Comprehensive help and documentation
@@ -459,12 +490,15 @@ tests/
 - ✅ Fast operation with minimal user intervention
 
 ## Timeline Estimate
+
 **Total Development Time**: 3 weeks
-- Week 1: Core infrastructure and backup functionality  
+
+- Week 1: Core infrastructure and backup functionality
 - Week 2: Restore functionality and advanced CLI features
 - Week 3: Testing, optimization, and documentation
 
 ## Risk Mitigation
+
 - **Large file handling**: Implement streaming compression to avoid memory issues
 - **Permission issues**: Graceful degradation when permissions prevent access
 - **Cross-platform compatibility**: Use cross-platform libraries and extensive testing
