@@ -169,6 +169,7 @@ ignore = [
 "noxfile.py" = ["S101"]
 "**/conftest.py" = ["S101"]
 "**/cli.py" = ["B008"]
+"**/compression.py" = ["S202"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 20

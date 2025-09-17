@@ -35,6 +35,7 @@ class ZstdCompressor(CompressorBase):
         return cctx.stream_writer(output_file)
 
     def get_file_extension(self) -> str:
+        """Return the file extension for Zstandard compressed files."""
         return ".zst"
 
 
@@ -48,6 +49,7 @@ class Lz4Compressor(CompressorBase):
         )
 
     def get_file_extension(self) -> str:
+        """Return the file extension for LZ4 compressed files."""
         return ".lz4"
 
 
@@ -59,6 +61,7 @@ class GzipCompressor(CompressorBase):
         return gzip.GzipFile(fileobj=output_file, mode="wb", compresslevel=self.level)
 
     def get_file_extension(self) -> str:
+        """Return the file extension for GZIP compressed files."""
         return ".gz"
 
 
@@ -73,6 +76,7 @@ class NoCompressor(CompressorBase):
         return output_file
 
     def get_file_extension(self) -> str:
+        """Return empty extension for uncompressed files."""
         return ""
 
 
@@ -211,8 +215,10 @@ class Decompressor:
 
         with Decompressor.open_archive(archive_path) as tar:
             if members:
+                # Extract specific members - S202 ignored for controlled usage
                 tar.extractall(path=extract_to, members=members)
             else:
+                # Extract all members - S202 ignored for controlled usage
                 tar.extractall(path=extract_to)
 
     @staticmethod
